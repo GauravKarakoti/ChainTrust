@@ -24,42 +24,44 @@ export default function TrustScoreRing({ score, risk, size = 120 }) {
   }
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="absolute inset-0">
-        {/* Background ring */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#1e2847"
-          strokeWidth="8"
-        />
-        {/* Score ring */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="8"
-          strokeDasharray={`${filled} ${gap}`}
-          strokeLinecap="round"
-          className="score-ring"
-          style={{
-            filter: `drop-shadow(0 0 6px ${color}60)`,
-            transition: 'stroke-dasharray 0.8s ease',
-          }}
-        />
-      </svg>
-      <div className="text-center z-10">
-        <div className="font-bold mono leading-none" style={{ fontSize: size * 0.22, color }}>
-          {score}
-        </div>
-        <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-0.5">
-          {getLabel(score)}
+    <>
+      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="absolute inset-0">
+          {/* Background ring */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#1e2847"
+            strokeWidth="8"
+          />
+          {/* Score ring */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="8"
+            strokeDasharray={`${filled} ${gap}`}
+            strokeLinecap="round"
+            className="score-ring"
+            style={{
+              filter: `drop-shadow(0 0 6px ${color}60)`,
+              transition: 'stroke-dasharray 0.8s ease',
+            }}
+          />
+        </svg>
+        <div className="text-center z-10">
+          <div className="font-bold mono leading-none" style={{ fontSize: size * 0.22, color }}>
+            {score}
+          </div>
         </div>
       </div>
-    </div>
+      <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-0.5">
+        {getLabel(score)}
+      </div>
+    </>
   )
 }

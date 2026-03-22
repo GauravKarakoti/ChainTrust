@@ -31,19 +31,24 @@ export default function App() {
     setTimeout(() => {
       setIsLoading(false)
       setGraphKey(k => k + 1)
-      // Auto-select target wallet
-      const targetProfile = WALLET_PROFILES['0x7a23...f4c1']
-      setSelectedNode({ ...targetProfile, label: address.includes('Vitalik') || address === '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B' ? 'Vitalik.eth' : targetProfile.label })
+      
+      // FIX: Look up the typed address, fallback if mock data doesn't exist
+      const targetProfile = WALLET_PROFILES[address] || WALLET_PROFILES['0x7a23...f4c1']
+      
+      setSelectedNode({ 
+        ...targetProfile, 
+        label: address.includes('Vitalik') || address === '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B' ? 'Vitalik.eth' : targetProfile.label 
+      })
     }, 1200)
   }, [])
 
-  const targetWallet = WALLET_PROFILES['0x7a23...f4c1']
+  const targetWallet = WALLET_PROFILES[searchedAddress] || WALLET_PROFILES['0x7a23...f4c1']
 
   return (
     <div className="min-h-screen bg-dark-900 flex flex-col">
       {/* Top Nav */}
       <header className="flex-shrink-0 border-b border-[#1e2847] bg-dark-800/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto px-4 h-14 flex items-center gap-4">
+        <div className="max-w-[1600px] mx-auto px-4 h-24 flex items-center gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2.5 flex-shrink-0">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">

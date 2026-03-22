@@ -21,6 +21,7 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
 
     if (cyRef.current) {
       cyRef.current.destroy()
+      cyRef.current = null // ADD THIS: Clear reference
     }
 
     const cy = cytoscape({
@@ -72,24 +73,25 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
   useEffect(() => {
     initCy()
     return () => {
-      if (cyRef.current) cyRef.current.destroy()
+      if (cyRef.current) {
+        cyRef.current.destroy()
+        cyRef.current = null // ADD THIS: Clear reference
+      }
     }
   }, [initCy])
 
-  // Apply filter
   useEffect(() => {
     const cy = cyRef.current
-    if (!cy) return
-    cy.elements().removeClass('dimmed')
-    if (filter && filter !== 'ALL') {
-      cy.nodes().forEach(node => {
-        if (node.data('risk') !== filter && node.data('type') !== 'target') {
-          node.addClass('dimmed')
-          node.connectedEdges().addClass('dimmed')
-        }
-      })
+    if (!cy || !selectedNode) return
+
+    const node = cy.getElementById(selectedNode.address || selectedNode.short)
+    if (node && node.length > 0) {
+      cy.elements().addClass('dimmed')
+      node.removeClass('dimmed')
+      node.connectedEdges().removeClass('dimmed')
+      node.connectedEdges().connectedNodes().removeClass('dimmed')
     }
-  }, [filter])
+  }, [selectedNode])
 
   const handleZoomIn = () => cyRef.current?.zoom(cyRef.current.zoom() * 1.3)
   const handleZoomOut = () => cyRef.current?.zoom(cyRef.current.zoom() * 0.75)

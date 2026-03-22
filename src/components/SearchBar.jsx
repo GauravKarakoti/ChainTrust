@@ -57,7 +57,7 @@ export default function SearchBar({ onSearch, isLoading }) {
       </form>
 
       {/* Preset buttons */}
-      <div className="flex items-center gap-2 mt-3 flex-wrap">
+      <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
         <span className="text-[10px] text-slate-600 uppercase tracking-widest flex-shrink-0">Quick load:</span>
         {PRESET_WALLETS.map(({ address, risk, label }) => (
           <button
