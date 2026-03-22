@@ -16,7 +16,8 @@ const PATTERN_ICONS = {
   BURST: '⚡',
 }
 
-export default function AlertsPanel() {
+// FIX: Added isExpanded and onToggleExpand props
+export default function AlertsPanel({ isExpanded, onToggleExpand }) {
   const [alerts, setAlerts] = useState(ALERTS)
   const [newAlertPulse, setNewAlertPulse] = useState(false)
   const [filter, setFilter] = useState('ALL')
@@ -61,9 +62,19 @@ export default function AlertsPanel() {
         <div className="flex items-center gap-2 mb-3">
           <div className={`w-2 h-2 rounded-full ${newAlertPulse ? 'bg-red-500 animate-ping' : 'bg-red-600'}`} />
           <h3 className="text-sm font-semibold text-slate-300">Real-time Alerts</h3>
-          <span className="ml-auto text-[10px] mono bg-dark-700 border border-[#1e2847] px-2 py-0.5 rounded text-slate-400">
+          <span className="text-[10px] mono bg-dark-700 border border-[#1e2847] px-2 py-0.5 rounded text-slate-400">
             LIVE
           </span>
+          
+          {/* FIX: Expand/Collapse Button */}
+          <div className="ml-auto">
+            <button 
+              onClick={onToggleExpand}
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-slate-200 transition-colors bg-dark-700 hover:bg-dark-600 px-2.5 py-1 rounded border border-[#1e2847]"
+            >
+              {isExpanded ? '▼ Collapse' : '▲ Expand'}
+            </button>
+          </div>
         </div>
 
         {/* Stats row */}

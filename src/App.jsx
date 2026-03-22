@@ -20,9 +20,12 @@ export default function App() {
   const [selectedNode, setSelectedNode] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [graphFilter, setGraphFilter] = useState('ALL')
-  const [activeTab, setActiveTab] = useState('inspector') // 'inspector' | 'ai'
+  const [activeTab, setActiveTab] = useState('inspector') 
   const [searchedAddress, setSearchedAddress] = useState('0x7a23...f4c1')
   const [graphKey, setGraphKey] = useState(0)
+  
+  // NEW: State to manage alerts panel height
+  const [isAlertsExpanded, setIsAlertsExpanded] = useState(false)
 
   const handleSearch = useCallback((address) => {
     setIsLoading(true)
@@ -32,7 +35,6 @@ export default function App() {
       setIsLoading(false)
       setGraphKey(k => k + 1)
       
-      // FIX: Look up the typed address, fallback if mock data doesn't exist
       const targetProfile = WALLET_PROFILES[address] || WALLET_PROFILES['0x7a23...f4c1']
       
       setSelectedNode({ 
@@ -45,11 +47,10 @@ export default function App() {
   const targetWallet = WALLET_PROFILES[searchedAddress] || WALLET_PROFILES['0x7a23...f4c1']
 
   return (
-    <div className="min-h-screen bg-dark-900 flex flex-col">
+    <div className="h-screen bg-dark-900 flex flex-col overflow-hidden">
       {/* Top Nav */}
       <header className="flex-shrink-0 border-b border-[#1e2847] bg-dark-800/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto px-4 h-24 flex items-center gap-4">
-          {/* Logo */}
           <div className="flex items-center gap-2.5 flex-shrink-0">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">
               ⛓
@@ -58,12 +59,10 @@ export default function App() {
             <span className="text-[10px] text-slate-600 border border-[#1e2847] px-1.5 py-0.5 rounded">v0.9 BETA</span>
           </div>
 
-          {/* Search */}
           <div className="flex-1 max-w-2xl mx-auto hidden md:block">
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
           </div>
 
-          {/* Right pills */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -77,7 +76,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Mobile search */}
       <div className="md:hidden p-3 border-b border-[#1e2847]">
         <SearchBar onSearch={handleSearch} isLoading={isLoading} />
       </div>
@@ -97,7 +95,6 @@ export default function App() {
             </div>
           ))}
 
-          {/* Current wallet score */}
           <div className="ml-auto flex items-center gap-3 px-4 flex-shrink-0">
             <div className="text-right">
               <p className="text-[10px] text-slate-600 uppercase tracking-widest">Analyzing</p>
@@ -109,10 +106,9 @@ export default function App() {
       </div>
 
       {/* Main layout */}
-      <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-4 flex gap-4 min-h-0" style={{ height: 'calc(100vh - 120px)' }}>
-        {/* Graph (center) */}
+      {/* FIX: Removed hardcoded fixed height to let flex-1 take remaining space properly */}
+      <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-4 flex gap-4 min-h-0">
         <div className="flex-1 flex flex-col gap-4 min-w-0">
-          {/* Filter row */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <span className="text-[11px] text-slate-600 uppercase tracking-widest">Filter:</span>
             <div className="flex gap-1.5">
@@ -138,7 +134,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Graph */}
           <div className="flex-1 min-h-0">
             {isLoading ? (
               <div className="w-full h-full bg-dark-800 rounded-xl border border-[#1e2847] flex flex-col items-center justify-center gap-4">
@@ -171,9 +166,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right sidebar */}
         <div className="w-80 flex-shrink-0 flex flex-col gap-4 min-h-0">
-          {/* Tab selector */}
           <div className="flex gap-1 bg-dark-800 border border-[#1e2847] rounded-xl p-1 flex-shrink-0">
             {[
               { id: 'inspector', label: '🔍 Inspector' },
@@ -193,7 +186,6 @@ export default function App() {
             ))}
           </div>
 
-          {/* Panel content */}
           <div className="flex-1 min-h-0 overflow-hidden">
             {activeTab === 'inspector' ? (
               <div className="h-full bg-dark-800 border border-[#1e2847] rounded-xl overflow-hidden">
@@ -209,8 +201,15 @@ export default function App() {
       </main>
 
       {/* Alerts bottom bar */}
-      <div className="flex-shrink-0 max-w-[1600px] mx-auto w-full px-4 pb-4" style={{ height: '260px' }}>
-        <AlertsPanel />
+      {/* FIX: Make alerts wrapper respect the expanding state */}
+      <div 
+        className="flex-shrink-0 max-w-[1600px] mx-auto w-full px-4 pb-4 transition-all duration-300 ease-in-out" 
+        style={{ height: isAlertsExpanded ? '50vh' : '260px' }}
+      >
+        <AlertsPanel 
+          isExpanded={isAlertsExpanded} 
+          onToggleExpand={() => setIsAlertsExpanded(!isAlertsExpanded)} 
+        />
       </div>
     </div>
   )
