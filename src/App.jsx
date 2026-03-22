@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import GraphView from './components/GraphView'
 import NodeInspector from './components/NodeInspector'
 import AIExplainer from './components/AIExplainer'
 import AlertsPanel from './components/AlertsPanel'
 import SearchBar from './components/SearchBar'
 import TrustScoreRing from './components/TrustScoreRing'
-import { GRAPH_ELEMENTS, WALLET_PROFILES } from './data/mockData'
+import { fetchWalletGraph, fetchWalletProfile } from './services/tigergraph'
 
 const FILTER_OPTIONS = ['ALL', 'CRITICAL', 'HIGH', 'SAFE']
 
@@ -18,33 +18,47 @@ const STATS = [
 
 export default function App() {
   const [selectedNode, setSelectedNode] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // Start loading on mount
   const [graphFilter, setGraphFilter] = useState('ALL')
   const [activeTab, setActiveTab] = useState('inspector') 
   const [searchedAddress, setSearchedAddress] = useState('0x7a23...f4c1')
   const [graphKey, setGraphKey] = useState(0)
   
-  // NEW: State to manage alerts panel height
+  // NEW: State for TigerGraph data
+  const [graphElements, setGraphElements] = useState({ nodes: [], edges: [] })
+  const [targetProfile, setTargetProfile] = useState({})
+  
   const [isAlertsExpanded, setIsAlertsExpanded] = useState(false)
 
-  const handleSearch = useCallback((address) => {
+  const handleSearch = useCallback(async (address) => {
     setIsLoading(true)
     setSelectedNode(null)
     setSearchedAddress(address)
-    setTimeout(() => {
+    
+    try {
+      // Fetch live graph data from TigerGraph
+      const tgGraphData = await fetchWalletGraph(address)
+      const tgProfileData = await fetchWalletProfile(address)
+      
+      setGraphElements(tgGraphData || { nodes: [], edges: [] })
+      setTargetProfile(tgProfileData || {})
+      setSelectedNode(tgProfileData || null)
+    } catch (error) {
+      console.error("Failed to fetch TigerGraph data:", error)
+      // Fallback state on error
+      setGraphElements({ nodes: [], edges: [] })
+      setTargetProfile({})
+    } finally {
       setIsLoading(false)
       setGraphKey(k => k + 1)
-      
-      const targetProfile = WALLET_PROFILES[address] || WALLET_PROFILES['0x7a23...f4c1']
-      
-      setSelectedNode({ 
-        ...targetProfile, 
-        label: address.includes('Vitalik') || address === '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B' ? 'Vitalik.eth' : targetProfile.label 
-      })
-    }, 1200)
+    }
   }, [])
 
-  const targetWallet = WALLET_PROFILES[searchedAddress] || WALLET_PROFILES['0x7a23...f4c1']
+  // NEW: Fetch initial data on mount
+  useEffect(() => {
+    handleSearch(searchedAddress)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="min-h-screen bg-dark-900 flex flex-col">
@@ -100,13 +114,13 @@ export default function App() {
               <p className="text-[10px] text-slate-600 uppercase tracking-widest">Analyzing</p>
               <p className="text-xs mono font-semibold text-slate-300 truncate max-w-[140px]">{searchedAddress}</p>
             </div>
-            <TrustScoreRing score={targetWallet.trustScore} risk={targetWallet.risk} size={44} />
+            {/* UPDATED: Reference dynamic state instead of static mock */}
+            <TrustScoreRing score={targetProfile.trustScore || 0} risk={targetProfile.risk || 'UNKNOWN'} size={44} />
           </div>
         </div>
       </div>
 
       {/* Main layout */}
-      {/* FIX: Removed hardcoded fixed height to let flex-1 take remaining space properly */}
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-4 flex gap-4 min-h-[500px]">
         <div className="flex-1 flex flex-col gap-4 min-w-0">
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -157,7 +171,7 @@ export default function App() {
             ) : (
               <GraphView
                 key={graphKey}
-                elements={GRAPH_ELEMENTS}
+                elements={graphElements} // UPDATED: Passed live state
                 onNodeSelect={setSelectedNode}
                 selectedNode={selectedNode}
                 filter={graphFilter}
