@@ -47,7 +47,7 @@ export default function App() {
   const targetWallet = WALLET_PROFILES[searchedAddress] || WALLET_PROFILES['0x7a23...f4c1']
 
   return (
-    <div className="h-screen bg-dark-900 flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-dark-900 flex flex-col">
       {/* Top Nav */}
       <header className="flex-shrink-0 border-b border-[#1e2847] bg-dark-800/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto px-4 h-24 flex items-center gap-4">
@@ -107,7 +107,7 @@ export default function App() {
 
       {/* Main layout */}
       {/* FIX: Removed hardcoded fixed height to let flex-1 take remaining space properly */}
-      <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-4 flex gap-4 min-h-0">
+      <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-4 flex gap-4 min-h-[500px]">
         <div className="flex-1 flex flex-col gap-4 min-w-0">
           <div className="flex items-center gap-3 flex-shrink-0">
             <span className="text-[11px] text-slate-600 uppercase tracking-widest">Filter:</span>
@@ -200,12 +200,7 @@ export default function App() {
         </div>
       </main>
 
-      {/* Alerts bottom bar */}
-      {/* FIX: Make alerts wrapper respect the expanding state */}
-      <div 
-        className="flex-shrink-0 max-w-[1600px] mx-auto w-full px-4 pb-4 transition-all duration-300 ease-in-out" 
-        style={{ height: isAlertsExpanded ? '50vh' : '260px' }}
-      >
+      <div className="flex-shrink-0 max-w-[1600px] mx-auto w-full px-4 pb-4">
         <AlertsPanel 
           isExpanded={isAlertsExpanded} 
           onToggleExpand={() => setIsAlertsExpanded(!isAlertsExpanded)} 
