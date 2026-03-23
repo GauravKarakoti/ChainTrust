@@ -9,7 +9,7 @@ const TG_TOKEN = process.env.TG_TOKEN;
 export async function fetchWalletGraph(address) {
   try {
     // Calling a custom GSQL query named 'check_wallet_risk'
-    const response = await fetch(`${TG_URL}/query/ChainTrustGraph/check_wallet_risk?target_wallet=${address}`, {
+    const response = await fetch(`${TG_URL}/restpp/query/ChainTrustGraph/check_wallet_risk?target_wallet=${address}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${TG_TOKEN}`,
@@ -50,8 +50,7 @@ export async function fetchWalletGraph(address) {
  * Fetches the specific risk profile details for the inspector panel
  */
 export async function fetchWalletProfile(address) {
-  // Replace with a standard TigerGraph vertex fetch
-  const response = await fetch(`${TG_URL}/graph/ChainTrustGraph/vertices/Wallet/${address}`, {
+  const response = await fetch(`${TG_URL}/restpp/graph/ChainTrustGraph/vertices/Wallet/${address}`, {
     headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
   });
   const data = await response.json();
