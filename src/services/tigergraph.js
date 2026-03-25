@@ -72,14 +72,20 @@ export async function upsertGraphData(transactions) {
     };
   });
 
-  await fetch('/restpp/graph/ChainTrustGraph', {
+  const response = await fetch('/restpp/graph/ChainTrustGraph', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${TG_TOKEN}`, // Fixed env variable
+      'Authorization': `Bearer ${TG_TOKEN}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
   });
+
+  // Add this to catch ingestion errors:
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("TigerGraph Ingestion Failed:", errorData);
+  }
 }
 
 // 2. NEW: Function to lazy-load data from Etherscan and push to TigerGraph

@@ -31,17 +31,20 @@ export default function App() {
   const [isAlertsExpanded, setIsAlertsExpanded] = useState(false)
 
   const handleSearch = useCallback(async (address) => {
+    // 1. Normalize the address to match TigerGraph's stored lowercase IDs
+    const normalizedAddress = address.toLowerCase();
+    
     setIsLoading(true)
     setSelectedNode(null)
-    setSearchedAddress(address)
+    setSearchedAddress(normalizedAddress) // Use normalized here so the UI reflects it
     
     try {
-      // 1. LAZY LOAD: Fetch from blockchain indexer and upsert to TigerGraph first
-      await syncWalletTransactions(address);
+      // 2. Pass the normalized address to ALL your service calls
+      await syncWalletTransactions(normalizedAddress);
 
-      // 2. QUERY: Now fetch the updated graph data and risk profile
-      const tgGraphData = await fetchWalletGraph(address)
-      const tgProfileData = await fetchWalletProfile(address)
+      // Now TigerGraph will correctly match the Vertex IDs
+      const tgGraphData = await fetchWalletGraph(normalizedAddress)
+      const tgProfileData = await fetchWalletProfile(normalizedAddress)
       
       setGraphElements(tgGraphData || { nodes: [], edges: [] })
       setTargetProfile(tgProfileData || {})
