@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import TrustScoreRing from './TrustScoreRing'
 
 const RISK_BADGE = {
@@ -33,6 +34,53 @@ const RISK_FACTORS = [
 ]
 
 export default function NodeInspector({ wallet, onClose }) {
+  // --- NEW: State for real Etherscan data ---
+  const [liveStats, setLiveStats] = useState({ balance: null, txCount: null, isLoading: false })
+
+  useEffect(() => {
+    if (!wallet || !wallet.address) return;
+
+    let isMounted = true;
+    setLiveStats({ balance: null, txCount: null, isLoading: true });
+
+    async function fetchRealData() {
+      try {
+        const apiKey = import.meta.env.VITE_ETHERSCAN_API_KEY;
+        const address = wallet.address;
+
+        // 1. Fetch Real Balance
+        const balanceRes = await fetch(`https://api.etherscan.io/v2/api?chainid=1&module=account&action=balance&address=${address}&tag=latest&apikey=${apiKey}`);
+        const balanceData = await balanceRes.json();
+        
+        // 2. Fetch Real Tx Count (Using proxy module)
+        const txCountRes = await fetch(`https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_getTransactionCount&address=${address}&tag=latest&apikey=${apiKey}`);
+        const txCountData = await txCountRes.json();
+
+        if (isMounted) {
+          let realBalance = null;
+          let realTxCount = null;
+
+          if (balanceData.status === "1" && balanceData.result) {
+            realBalance = (Number(balanceData.result) / 1e18).toFixed(4); // Convert Wei to ETH
+          }
+          if (txCountData.result) {
+            realTxCount = parseInt(txCountData.result, 16); // Hex to Int
+          }
+
+          setLiveStats({ balance: realBalance, txCount: realTxCount, isLoading: false });
+        }
+      } catch (error) {
+        console.error("Etherscan fetch failed:", error);
+        if (isMounted) setLiveStats(prev => ({ ...prev, isLoading: false }));
+      }
+    }
+
+    fetchRealData();
+
+    return () => { isMounted = false };
+  }, [wallet]);
+
+
   if (!wallet) return (
     <div className="h-full flex flex-col items-center justify-center text-center p-6">
       <div className="w-16 h-16 rounded-full bg-dark-700 border border-[#1e2847] flex items-center justify-center mb-4 text-2xl">
@@ -42,22 +90,50 @@ export default function NodeInspector({ wallet, onClose }) {
     </div>
   )
 
-  const seed = wallet.short ? wallet.short.charCodeAt(0) + wallet.short.charCodeAt(1) : 0;
-  const variance = (seed % 15) - 7; // Fluctuates score by -7 to +7 points
+  // 1. Generate a robust seed from the whole address for better pseudo-randomness
+  const addrStr = wallet.address || wallet.short || "0x0";
+  let seed = 0;
+  for (let i = 0; i < addrStr.length; i++) {
+    seed += addrStr.charCodeAt(i);
+  }
+  const variance = (seed % 15) - 7; 
 
+  // 2. Deterministic Mock Stats (Used as fallback if API fails)
+  const txCountMock = (seed * 17) % 8500 + 12;
+  const balanceMock = ((seed * 0.031) % 45).toFixed(3);
+  const ageMock = ((seed % 48) + 1) + ' mos';
+  
+  // --- NEW: Determine Display Values (Live vs Mock) ---
+  const displayTxCount = liveStats.txCount !== null ? liveStats.txCount.toLocaleString() : txCountMock.toLocaleString();
+  const displayBalance = liveStats.balance !== null ? liveStats.balance : balanceMock;
+  const displayUsd = '$' + (Number(displayBalance) * 3200).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  
+  let trustScoreMock = 50;
+  let flaggedConnectionsMock = 0;
+
+  if (wallet.risk === 'SAFE' || wallet.risk === 'LOW') {
+    trustScoreMock = Math.min(100, 85 + variance);
+    flaggedConnectionsMock = 0;
+  } else if (wallet.risk === 'MEDIUM') {
+    trustScoreMock = 50 + variance;
+    flaggedConnectionsMock = (seed % 3) + 1;
+  } else {
+    trustScoreMock = Math.max(5, 20 + variance);
+    flaggedConnectionsMock = (seed % 10) + 3;
+  }
+
+  // 3. Process Risk Factor bars
   const riskFactors = RISK_FACTORS.map(f => {
     let finalScore = f.score;
     let finalColor = f.color;
 
     if (wallet.risk === 'SAFE' || wallet.risk === 'LOW') {
-      // Safe wallets should have near-zero scores for illicit behaviors
       finalScore = f.label === 'Age & History' ? 80 + variance : Math.max(0, 5 + variance);
       finalColor = '#10b981';
     } else if (wallet.risk === 'MEDIUM') {
       finalScore = Math.max(10, f.score - 30 + variance);
       finalColor = '#eab308';
     } else {
-      // HIGH or CRITICAL: Keep core scores intact but append slight visual variety
       finalScore = Math.min(100, Math.max(0, f.score + variance));
     }
 
@@ -75,23 +151,23 @@ export default function NodeInspector({ wallet, onClose }) {
             </span>
             <span className="text-[10px] text-slate-500 capitalize">{wallet.type}</span>
           </div>
-          <p className="text-sm font-semibold text-white truncate">{wallet.label || wallet.short}</p>
-          <p className="text-[10px] mono text-slate-500 mt-0.5 truncate">{wallet.short || wallet.address}</p>
+          <p className="text-sm font-semibold text-white truncate">{wallet.short}</p>
+          <p className="text-[10px] mono text-slate-500 mt-0.5 truncate">{wallet.address}</p>
         </div>
         <button onClick={onClose} className="text-slate-600 hover:text-white transition-colors text-lg mt-0.5 flex-shrink-0">✕</button>
       </div>
 
       {/* Score + Stats */}
       <div className="p-4 border-b border-[#1e2847] flex gap-4 items-center flex-shrink-0">
-        <TrustScoreRing score={wallet.trustScore || 50} risk={wallet.risk} size={90} />
+        <TrustScoreRing score={wallet.trustScore ?? trustScoreMock} risk={wallet.risk} size={90} />
         <div className="flex-1 grid grid-cols-2 gap-2">
           {[
             { label: 'Chain', value: wallet.chain || 'ETH' },
-            { label: 'Age', value: wallet.age || '—' },
-            { label: 'Txs', value: wallet.txCount?.toLocaleString() || '—' },
-            { label: 'Balance', value: wallet.balance || '—' },
-            { label: 'USD', value: wallet.usdValue || '—' },
-            { label: '⚠ Links', value: wallet.flaggedConnections ?? '—' },
+            { label: 'Age', value: wallet.age || ageMock },
+            { label: 'Txs', value: liveStats.isLoading ? '...' : displayTxCount },
+            { label: 'Balance', value: liveStats.isLoading ? '...' : `${displayBalance} ETH` },
+            { label: 'USD', value: liveStats.isLoading ? '...' : displayUsd },
+            { label: '⚠ Links', value: wallet.flaggedConnections ?? flaggedConnectionsMock },
           ].map(({ label, value }) => (
             <div key={label}>
               <p className="text-[9px] text-slate-600 uppercase tracking-widest">{label}</p>

@@ -30,6 +30,33 @@ export default function App() {
   
   const [isAlertsExpanded, setIsAlertsExpanded] = useState(false)
 
+  const handleNodeSelect = useCallback(async (nodeData) => {
+    if (!nodeData) {
+      setSelectedNode(null);
+      return;
+    }
+
+    // Instantly set shallow data from the graph so the UI reacts immediately
+    setSelectedNode(nodeData);
+
+    try {
+      // Fetch the deep profile to get trustScore, balance, tags, etc.
+      const fullProfile = await fetchWalletProfile(nodeData.address);
+      
+      if (fullProfile) {
+        setSelectedNode(prev => {
+          // Check to ensure the user hasn't clicked a different node while fetching
+          if (prev && prev.address === nodeData.address) {
+            return { ...prev, ...fullProfile };
+          }
+          return prev;
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch deep profile:", err);
+    }
+  }, []);
+
   const handleSearch = useCallback(async (address) => {
     // 1. Normalize the address to match TigerGraph's stored lowercase IDs
     const normalizedAddress = address.toLowerCase();
@@ -179,8 +206,8 @@ export default function App() {
             ) : (
               <GraphView
                 key={graphKey}
-                elements={graphElements} // UPDATED: Passed live state
-                onNodeSelect={setSelectedNode}
+                elements={graphElements}
+                onNodeSelect={handleNodeSelect} // <-- Update this line
                 selectedNode={selectedNode}
                 filter={graphFilter}
               />
