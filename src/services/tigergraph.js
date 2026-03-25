@@ -46,6 +46,49 @@ export async function fetchWalletGraph(address) {
   }
 }
 
+async function upsertGraphData(transactions) {
+  const payload = {
+    vertices: {
+      "Wallet": {}
+    },
+    edges: {
+      "Wallet": {}
+    }
+  };
+
+  transactions.forEach(tx => {
+    // 1. Add Source & Target Wallets (Vertices)
+    payload.vertices.Wallet[tx.from] = { 
+        "address": { "value": tx.from }, 
+        "short_address": { "value": tx.from.substring(0,6) } 
+    };
+    payload.vertices.Wallet[tx.to] = { 
+        "address": { "value": tx.to }, 
+        "short_address": { "value": tx.to.substring(0,6) } 
+    };
+
+    // 2. Add the Transaction (Edge)
+    if (!payload.edges.Wallet[tx.from]) {
+        payload.edges.Wallet[tx.from] = { "TRANSACTION": { "Wallet": {} } };
+    }
+    
+    payload.edges.Wallet[tx.from]["TRANSACTION"]["Wallet"][tx.to] = {
+      "amount": { "value": tx.value },
+      // Include any other edge attributes you defined
+    };
+  });
+
+  // 3. Send to TigerGraph
+  await fetch('/restpp/graph/ChainTrustGraph', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.TG_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+}
+
 export async function fetchWalletProfile(address) {
   // 1. Return null early if no address
   if (!address) return null; 
