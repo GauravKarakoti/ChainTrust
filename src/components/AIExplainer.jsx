@@ -35,8 +35,8 @@ export default function AIExplainer({ wallet }) {
     let isMounted = true;
     
     async function loadExplanations() {
-      // Use address (or short as fallback identifier)
-      const data = await fetchAIExplanations(wallet.address || wallet.short);
+      // Add wallet.id as a reliable fallback identifier
+      const data = await fetchAIExplanations(wallet.address || wallet.id || wallet.short);
       if (!isMounted) return;
       setExplanations(data);
       setExplanationIndex(0);

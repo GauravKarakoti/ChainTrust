@@ -24,8 +24,10 @@ export async function fetchWalletGraph(address) {
         id: node.v_id, 
         label: node.attributes.short_address, 
         type: node.v_type.toLowerCase(), 
-        // Force uppercase and strip the word "RISK" to match the UI enums
-        risk: (node.attributes['@calculated_risk'] || node.attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', '')
+        risk: (node.attributes['@calculated_risk'] || node.attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', ''),
+        // Add these two lines to pass the data to the inspector/AI explainer
+        address: node.v_id, 
+        short: node.attributes.short_address
       }
     }));
 
