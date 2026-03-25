@@ -1,12 +1,11 @@
-const TG_URL = import.meta.env.TG_URL;
-const TG_TOKEN = import.meta.env.TG_TOKEN;
+const TG_TOKEN = import.meta.env.VITE_TG_TOKEN;
 
 /**
  * Fetches the 3-hop transaction graph for a specific wallet address
  */
 export async function fetchWalletGraph(address) {
   try {
-    const response = await fetch(`${TG_URL}/restpp/query/ChainTrustGraph/check_wallet_risk?target_wallet=${address}`, {
+    const response = await fetch(`/restpp/query/ChainTrustGraph/check_wallet_risk?target_wallet=${address}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${TG_TOKEN}`,
@@ -47,7 +46,7 @@ export async function fetchWalletGraph(address) {
  */
 export async function fetchWalletProfile(address) {
   try {
-    const response = await fetch(`${TG_URL}/restpp/graph/ChainTrustGraph/vertices/Wallet/${address}`, {
+    const response = await fetch(`/restpp/graph/ChainTrustGraph/vertices/Wallet/${address}`, {
       headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
     });
     const data = await response.json();
@@ -63,7 +62,7 @@ export async function fetchWalletProfile(address) {
  */
 export async function fetchPresetWallets() {
   try {
-    const response = await fetch(`${TG_URL}/restpp/query/ChainTrustGraph/get_preset_wallets`, {
+    const response = await fetch(`/restpp/query/ChainTrustGraph/get_preset_wallets`, {
       headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
     });
     const data = await response.json();
@@ -77,7 +76,7 @@ export async function fetchPresetWallets() {
 export async function fetchAIExplanations(address) {
   try {
     // FIX: Changed ?wallet= to ?wallet_id= to match the GSQL query parameter
-    const response = await fetch(`${TG_URL}/restpp/query/ChainTrustGraph/generate_ai_explanation?wallet_id=${address}`, {
+    const response = await fetch(`/restpp/query/ChainTrustGraph/generate_ai_explanation?wallet_id=${address}`, {
       headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
     });
     const data = await response.json();
@@ -93,7 +92,7 @@ export async function fetchAIExplanations(address) {
  */
 export async function fetchLiveAlerts() {
   try {
-    const response = await fetch(`${TG_URL}/restpp/query/ChainTrustGraph/get_live_alerts`, {
+    const response = await fetch(`/restpp/query/ChainTrustGraph/get_live_alerts`, {
       headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
     });
     const data = await response.json();
