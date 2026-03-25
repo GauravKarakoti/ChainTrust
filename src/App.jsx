@@ -5,7 +5,7 @@ import AIExplainer from './components/AIExplainer'
 import AlertsPanel from './components/AlertsPanel'
 import SearchBar from './components/SearchBar'
 import TrustScoreRing from './components/TrustScoreRing'
-import { fetchWalletGraph, fetchWalletProfile } from './services/tigergraph'
+import { fetchWalletGraph, fetchWalletProfile, syncWalletTransactions } from './services/tigergraph'
 
 const FILTER_OPTIONS = ['ALL', 'CRITICAL', 'HIGH', 'SAFE']
 
@@ -36,7 +36,10 @@ export default function App() {
     setSearchedAddress(address)
     
     try {
-      // Fetch live graph data from TigerGraph
+      // 1. LAZY LOAD: Fetch from blockchain indexer and upsert to TigerGraph first
+      await syncWalletTransactions(address);
+
+      // 2. QUERY: Now fetch the updated graph data and risk profile
       const tgGraphData = await fetchWalletGraph(address)
       const tgProfileData = await fetchWalletProfile(address)
       
@@ -45,7 +48,6 @@ export default function App() {
       setSelectedNode(tgProfileData || null)
     } catch (error) {
       console.error("Failed to fetch TigerGraph data:", error)
-      // Fallback state on error
       setGraphElements({ nodes: [], edges: [] })
       setTargetProfile({})
     } finally {

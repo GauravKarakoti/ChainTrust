@@ -1,4 +1,5 @@
 const TG_TOKEN = import.meta.env.VITE_TG_TOKEN;
+const ETHERSCAN_KEY = import.meta.env.VITE_ETHERSCAN_API_KEY;
 
 export async function fetchWalletGraph(address) {
   // 1. Return empty graph if no address is provided
@@ -46,18 +47,13 @@ export async function fetchWalletGraph(address) {
   }
 }
 
-async function upsertGraphData(transactions) {
+export async function upsertGraphData(transactions) {
   const payload = {
-    vertices: {
-      "Wallet": {}
-    },
-    edges: {
-      "Wallet": {}
-    }
+    vertices: { "Wallet": {} },
+    edges: { "Wallet": {} }
   };
 
   transactions.forEach(tx => {
-    // 1. Add Source & Target Wallets (Vertices)
     payload.vertices.Wallet[tx.from] = { 
         "address": { "value": tx.from }, 
         "short_address": { "value": tx.from.substring(0,6) } 
@@ -67,26 +63,56 @@ async function upsertGraphData(transactions) {
         "short_address": { "value": tx.to.substring(0,6) } 
     };
 
-    // 2. Add the Transaction (Edge)
     if (!payload.edges.Wallet[tx.from]) {
         payload.edges.Wallet[tx.from] = { "TRANSACTION": { "Wallet": {} } };
     }
     
     payload.edges.Wallet[tx.from]["TRANSACTION"]["Wallet"][tx.to] = {
       "amount": { "value": tx.value },
-      // Include any other edge attributes you defined
     };
   });
 
-  // 3. Send to TigerGraph
   await fetch('/restpp/graph/ChainTrustGraph', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.TG_TOKEN}`,
+      'Authorization': `Bearer ${TG_TOKEN}`, // Fixed env variable
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
   });
+}
+
+// 2. NEW: Function to lazy-load data from Etherscan and push to TigerGraph
+export async function syncWalletTransactions(address) {
+  if (!address) return;
+
+  try {
+    // Fetch the last 50 transactions for this wallet from Etherscan
+    const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=50&sort=desc&apikey=${ETHERSCAN_KEY}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status !== "1" || !data.result) {
+      console.warn('No transactions found or API limit reached:', data.message);
+      return;
+    }
+
+    // Map Etherscan's schema to your expected transaction schema
+    const transactions = data.result.map(tx => ({
+      from: tx.from.toLowerCase(),
+      to: tx.to.toLowerCase(),
+      // Convert Wei to ETH and stringify it
+      value: (Number(tx.value) / 1e18).toFixed(4) 
+    }));
+
+    // Push the formatted payload into TigerGraph instantly
+    await upsertGraphData(transactions);
+    console.log(`✅ Synced ${transactions.length} transactions for ${address} to TigerGraph`);
+    
+  } catch (error) {
+    console.error('Failed to sync blockchain data:', error);
+  }
 }
 
 export async function fetchWalletProfile(address) {
