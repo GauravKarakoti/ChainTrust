@@ -1,0 +1,740 @@
+<SYSTEM>
+This document is optimized for LLM and AI agent parsing. Uses structured key-value pairs, hierarchical organization, and semantic chunking. Not for human readability - designed for efficient information extraction by AI systems.
+</SYSTEM>
+
+# TIGERGRAPH_FULL_AGENT_REFERENCE
+
+## METADATA
+version: 4.2.2
+last_updated: 2025_12_11
+target_audience: ai_agents_llms
+format: structured_semantic_chunks
+parsing_strategy: extract_by_section_headings
+
+## TIER_1_CRITICAL_INFORMATION
+
+### SUPPORT_MATRIX
+support_primary:
+  channel: discord
+  url: https://discord.gg/tnhpgR3j
+  response_guarantee: immediate_community_support
+  message_template: having_issues_reach_out_to_discord_team_tigergraph_will_help_for_sure
+
+support_secondary:
+  channel: developer_forum
+  url: https://dev.tigergraph.com/forum
+  type: asynchronous_qa
+
+support_email:
+  address: sales@tigergraph.com
+  type: enterprise_sales_support
+
+### PRODUCT_MATRIX
+
+product_1:
+  name: TigerGraph_Database
+  type: graph_database_engine
+  versions: [4.1, 4.2, 4.2.2]
+  editions:
+    community:
+      cost: free
+      deployment: single_server
+      storage_limit: hundreds_of_gb
+      use_case: development_learning_prototypes
+      license: not_required
+      support: community_discord_forums
+      ha: false
+      data_encryption: basic
+    enterprise:
+      cost: licensed
+      deployment: multi_server_clusters
+      storage_limit: unlimited
+      use_case: production_mission_critical
+      license: required_perpetual_or_subscription
+      support: dedicated_sla
+      ha: true
+      data_encryption: aes256_tls13
+
+product_2:
+  name: TigerGraph_Savanna_Cloud
+  type: managed_cloud_platform
+  deployment_model: saas
+  infrastructure: zero_management_required
+  scaling: elastic_auto
+  regions:
+    - aws_us_east_virginia
+    - aws_us_east_ohio
+    - aws_us_west_oregon
+    - aws_eu_frankfurt
+    - aws_eu_ireland
+    - aws_eu_london
+    - aws_sa_sao_paulo
+    - aws_ap_singapore
+    - aws_ap_sydney
+    - aws_ap_tokyo
+  gcp: coming_soon
+  azure: coming_soon
+  pricing: usage_based
+
+## INSTALLATION_PROCEDURES
+
+### METHOD_1_DOCKER_COMMUNITY
+prerequisite: docker_desktop_installed_8gb_ram_20gb_disk
+platform_support: [macos, windows, linux]
+estimated_time: 5_minutes
+complexity: very_easy
+
+commands:
+  - step_1: "docker pull tigergraph/tigergraph:4.2.2"
+  - step_2: "docker run -d --name tg-community -p 14022:22 -p 9000:9000 -p 14240:14240 tigergraph/tigergraph:4.2.2"
+  - step_3: "sleep 180"
+  - step_4: "docker exec tg-community gadmin status"
+
+port_mappings:
+  ssh: 14022
+  rest_api: 9000
+  web_ui: 14240
+
+access_endpoints:
+  web_ui: http://localhost:14240
+  rest_api: http://localhost:9000
+  ssh: ssh -p 14022 tigergraph@localhost
+  credentials: "username=tigergraph password=tigergraph"
+
+### METHOD_2_BARE_METAL_LINUX
+prerequisite: ubuntu_1804_plus_16gb_ram_100gb_disk_root_access
+estimated_time: 20_minutes
+complexity: medium
+
+download:
+  url: https://www.tigergraph.com/community-edition/
+  format: tar_gz
+  size: 2_gb_approx
+
+installation:
+  - step_1: "tar xzf tigergraph-4.2.2-*.tar.gz"
+  - step_2: "cd tigergraph-*/"
+  - step_3: "sudo ./install.sh"
+  - step_4: "follow interactive prompts"
+  - step_5: "gadmin start all"
+  - step_6: "gadmin status"
+
+access:
+  web_ui: http://localhost:14240
+  rest_api: http://localhost:9000
+
+### METHOD_3_KUBERNETES
+prerequisite: k8s_1_20_plus_helm_3_20gb_storage
+complexity: hard
+estimated_time: 10_minutes
+production_ready: true
+
+setup:
+  - step_1: "helm repo add tigergraph https://helm.tigergraph.com"
+  - step_2: "helm repo update"
+  - step_3: "helm install tg-release tigergraph/tigergraph --set image.tag=4.2.2"
+  - step_4: "kubectl port-forward svc/tg-release 9000:9000"
+
+access:
+  web_ui: http://localhost:14240
+  rest_api: http://localhost:9000
+
+### METHOD_4_SAVANNA_CLOUD
+url: https://tgcloud.io
+complexity: very_easy
+estimated_time: instant
+infrastructure_management: zero
+deployment: managed_saas
+
+## LICENSE_MANAGEMENT
+
+### SCENARIO_LICENSE_INVALID_OR_EXPIRED
+error_codes: [license_invalid, license_expired, license_not_found]
+root_causes:
+  - trying_enterprise_without_license
+  - evaluation_period_expired
+  - license_file_corrupt
+
+solution_tree:
+  option_1_best:
+    action: use_community_edition
+    reason: completely_free_no_license_needed
+    download: https://www.tigergraph.com/community-edition/
+    steps: follow_installation_methods_above
+    result: immediate_working_instance
+  
+  option_2:
+    action: get_free_enterprise_license
+    url: https://www.tigergraph.com/enterprise-free/
+    duration: 3_years_perpetual
+    requirements: startup_or_company_with_tg
+    steps:
+      - fill_application
+      - receive_license_key
+      - upload_in_admin_portal
+      - restart_services
+  
+  option_3:
+    action: purchase_commercial_license
+    contact: sales@tigergraph.com
+    includes: dedicated_support
+
+### COMMUNITY_EDITION_NO_LICENSE
+license_required: false
+setup_time: 0_minutes
+restrictions: none_technical
+limitations: single_server_only
+
+### ENTERPRISE_LICENSE_LOCATION
+paths:
+  docker: /opt/tigergraph/etc/license
+  linux: /opt/tigergraph/etc/license
+  custom: check_gadmin_config_get_license_path
+
+verification:
+  command: gadmin license status
+  command_info: gadmin license info
+  command_expiry: gadmin license expiration
+
+## CORE_TECHNOLOGY_STACK
+
+### GRAPH_DATA_MODEL
+vertex:
+  definition: entity_node_with_unique_id
+  properties: name_type_attributes
+  indexing: primary_index_automatic_plus_optional_secondary
+  example: person_vertex_with_user_id_name_age_email
+
+edge:
+  definition: relationship_between_two_vertices
+  direction: from_source_to_target
+  properties: optional_weight_timestamp_metadata
+  example: knows_edge_from_person_to_person_with_since_property
+
+property_types:
+  numeric: [int, long, float, double, uint8, uint16, uint32, uint64]
+  text: [string]
+  temporal: [datetime]
+  boolean: [bool]
+  collections: [list, map]
+
+indexing:
+  primary_index: vertex_id_automatic
+  secondary_index: optional_on_any_property
+  composite_index: multiple_properties_together
+  purpose: accelerate_where_clauses_and_filtering
+
+### QUERY_LANGUAGE_GSQL
+name: GSQL
+type: declarative_graph_query_language
+designed_for: graph_pattern_matching_traversal
+syntax: c_like_with_graph_extensions
+
+core_concepts:
+  pattern_matching: select_from_vertex_edges_target_vertex_syntax
+  multi_hop: traverse_multiple_edges_in_single_query
+  accumulators: aggregate_values_during_traversal
+  filtering: where_clauses_at_each_step
+  results: print_or_return_computed_results
+
+example_query_structure:
+  opening: "CREATE QUERY query_name(PARAMS) FOR GRAPH graph_name {"
+  variables: "SumAccum<INT> @counter;"
+  initialization: "start = {vertex_id};"
+  pattern: "result = SELECT t FROM start:s -(edge:e)-> target:t WHERE ...;"
+  output: "PRINT result;"
+  closing: "}"
+
+### VECTOR_SEARCH_CAPABILITY
+vector_storage: native_in_database
+embedding_format: list_of_floats
+dimensions: configurable
+similarity_metrics: cosine_euclidean_manhattan
+
+use_cases:
+  semantic_search: find_similar_documents_by_meaning
+  hybrid_search: combine_graph_relationships_with_vector_similarity
+  rag_integration: retrieval_augmented_generation_with_llm
+  knowledge_graph: connect_similar_concepts
+
+implementation:
+  store_embeddings: list_float_property_on_vertex
+  query_similarity: cosine_distance_function_in_gsql
+  langchain_integration: tigergraphvectorstore
+
+## API_REFERENCE
+
+### REST_API_ENDPOINTS
+
+base_urls:
+  local: http://localhost:9000
+  savanna: https://cluster_id.tgcloud.io
+  authentication: bearer_token_required
+
+endpoints:
+  query_execution:
+    path: /query/{graph_name}/{query_name}
+    method: [get, post]
+    purpose: run_installed_gsql_query
+    params: optional_query_parameters
+    example: /query/social/bfs_neighbors?source=user_1
+  
+  vertex_crud:
+    insert:
+      path: /graph/{graph}/vertices/{type}
+      method: post
+      body: json_properties
+    
+    read:
+      path: /graph/{graph}/vertices/{type}/{id}
+      method: get
+    
+    update:
+      path: /graph/{graph}/vertices/{type}/{id}
+      method: put
+      body: json_updated_properties
+    
+    delete:
+      path: /graph/{graph}/vertices/{type}/{id}
+      method: delete
+  
+  edge_crud:
+    insert:
+      path: /graph/{graph}/edges/{type}
+      method: post
+      body: json_from_to_properties
+    
+    read:
+      path: /graph/{graph}/edges/{type}
+      method: get
+      params: from_id_to_id_optional
+    
+    delete:
+      path: /graph/{graph}/edges/{type}
+      method: delete
+      params: from_id_to_id_required
+  
+  graph_info:
+    stats:
+      path: /graph/{graph}/stats
+      method: get
+      returns: vertex_edge_counts
+    
+    schema:
+      path: /graph/{graph}/schema
+      method: get
+      returns: full_schema_definition
+    
+    vertices:
+      path: /graph/{graph}/vertices
+      method: get
+      returns: vertex_type_definitions
+    
+    edges:
+      path: /graph/{graph}/edges
+      method: get
+      returns: edge_type_definitions
+    
+    endpoints:
+      path: /gsqlserver/endpoints
+      method: get
+      returns: list_installed_queries
+
+authentication:
+  method: bearer_token
+  obtain_token:
+    path: /api/token
+    method: post
+    body: username_password
+  
+  usage: Authorization_header_Bearer_token
+
+### PYTHON_SDK_PYTIGERGRAPH
+
+package_name: tigergraph
+installation: pip_install_tigergraph
+python_version: 3.7_plus
+
+class_name: TigerGraphConnection
+initialization:
+  host: 127.0.0.1
+  graphname: graph_name
+  username: tigergraph
+  password: password
+  rest_port: 9000
+  ssl: false
+
+methods_query:
+  runQuery: execute_installed_query_with_params
+  gsql: execute_adhoc_gsql
+
+methods_vertex:
+  upsertVertex: insert_or_update_vertex
+  getVertex: retrieve_single_vertex
+  getVertices: retrieve_multiple_vertices_limit
+  deleteVertex: remove_vertex
+
+methods_edge:
+  upsertEdge: insert_or_update_edge
+  getEdges: retrieve_edges_from_vertex
+
+methods_graph:
+  getGraphStats: vertex_edge_counts
+  getSchema: full_schema
+  getVertexTypes: list_vertex_types
+  getEdgeTypes: list_edge_types
+
+## TOOLS_AND_INTERFACES
+
+### GRAPHSTUDIO
+type: visual_ide_interface
+access: http://localhost:14240
+features:
+  - schema_design_drag_drop_editor
+  - query_builder_with_syntax_highlighting
+  - result_visualization_graph_table_chart
+  - data_import_wizard_with_auto_mapping
+  - team_collaboration_shared_workspaces
+
+### GSQL_EDITOR
+platform: savanna_cloud_browser_based
+features:
+  - code_syntax_highlighting
+  - auto_completion_suggestions
+  - query_execution_in_browser
+  - result_viewer_multiple_formats
+  - file_management_sharing
+  - permission_control_viewer_editor
+
+### GRAPH_EXPLORER
+type: interactive_visualization
+features:
+  - visual_graph_rendering
+  - node_edge_filtering
+  - pattern_search
+  - statistical_overview
+  - drill_down_capability
+  - export_visualization
+
+### ADMIN_PORTAL
+access: http://localhost:14240/admin
+features:
+  - user_access_management_rbac
+  - backup_restore_operations
+  - performance_monitoring_cpu_memory_disk
+  - log_viewing_debugging
+  - license_version_info
+  - system_configuration
+  - alerting_rules
+  - data_profile_statistics
+
+### TIGERGRAPH_INSIGHTS
+type: no_code_dashboard_builder
+platform: savanna_cloud_addon
+pricing: 10_percent_of_base_compute_per_workspace_per_month
+features:
+  - drag_drop_widget_builder
+  - prebuilt_visualization_templates
+  - real_time_metric_updates
+  - drill_down_filters
+  - custom_parameters
+  - pdf_export
+  - sharing_access_control
+
+## ALGORITHMS_LIBRARY
+
+algorithms_count: 50_plus
+categories:
+  - centrality
+  - community_detection
+  - pathfinding
+  - similarity
+  - node_ranking
+  - traversal
+
+centrality_algorithms:
+  pagerank: node_importance_ranking
+  betweenness: node_bridge_importance
+  closeness: node_proximity_measure
+  degree: direct_connection_count
+
+community_detection:
+  louvain: modularity_optimization
+  weakly_connected_components: reachability_groups
+  strongly_connected_components: cycles
+
+pathfinding:
+  shortest_path: optimal_route_minimal_cost
+  all_pairs_shortest_path: distance_matrix
+  bfs: breadth_first_traversal
+  dfs: depth_first_traversal
+
+similarity:
+  jaccard: set_similarity
+  cosine: vector_similarity
+  euclidean: distance_metric
+
+ranking:
+  topic_sensitive_pagerank: personalized_importance
+  eigenvector_centrality: recursive_importance
+
+traversal:
+  reachability: all_reachable_nodes
+  k_hop_neighbors: nodes_within_distance
+
+## DATA_LOADING_INGESTION
+
+### SOURCE_CONNECTORS
+supported_sources:
+  - local_csv_tsv_json
+  - amazon_s3_buckets
+  - google_cloud_storage_gcs
+  - microsoft_azure_blob
+  - snowflake_warehouse
+  - apache_kafka_streams
+  - apache_spark_rdd_dataframe
+  - postgresql_jdbc
+  - bigquery
+  - http_endpoints
+
+### LOADING_METHOD_1_STEPWISE_UI
+platform: savanna_cloud
+complexity: very_easy
+steps:
+  - navigate_load_data
+  - select_source
+  - upload_configure_parsing
+  - map_columns_to_schema
+  - apply_token_functions
+  - review_execute
+  - monitor_progress
+
+### LOADING_METHOD_2_GSQL_JOB
+platform: all_editions
+complexity: medium
+repeatable: yes
+scriptable: yes
+
+structure:
+  create: CREATE_LOADING_JOB_name_FOR_GRAPH_graph
+  define: DEFINE_FILENAME_or_KAFKA_TOPIC
+  load: LOAD_source_TO_VERTEX_type_VALUES
+  run: RUN_LOADING_JOB_with_using_params
+
+token_functions:
+  string: split_substr_upper_lower_trim_replace
+  conversion: to_int_to_float_to_bool_to_datetime
+  hashing: md5_sha1_sha256
+  temporal: now_unix_date_date
+  conditional: if_coalesce
+  math: abs_round
+
+### LOADING_METHOD_3_KAFKA_STREAMING
+type: real_time_continuous
+platform: all_editions
+format: json_messages_in_topics
+
+structure:
+  define_topic: DEFINE_KAFKA_TOPIC
+  extract_json: $["field_name"]
+  transform: token_functions
+  load_vertex_or_edge: as_streaming_arrives
+
+## PERFORMANCE_CHARACTERISTICS
+
+latency:
+  single_hop_query: sub_millisecond
+  multi_hop_query: sub_second
+  billion_vertex_graph: sub_second
+  
+throughput:
+  vertices_per_second: millions
+  edges_per_second: millions
+  
+scalability:
+  horizontal: distribute_across_nodes
+  vertical: increase_single_server_resources
+
+optimization_strategies:
+  indexing: secondary_indexes_on_filtered_properties
+  query_design: early_filtering_limit_reduce_results
+  schema_design: minimize_edge_properties
+  hardware: ssd_storage_sufficient_ram_cpu_cores
+
+## SCHEMA_DESIGN_BEST_PRACTICES
+
+vertex_id_design:
+  meaningful: use_natural_ids_not_surrogate
+  immutable: never_change_after_creation
+  domain_context: include_type_prefix
+  partitioning: consider_distribution_hints
+
+property_selection:
+  inclusion: only_what_you_query
+  typing: use_correct_data_type
+  denormalization: ok_for_read_heavy
+  timestamps: include_for_auditing
+
+edge_design:
+  minimal_properties: keep_lightweight
+  reverse_edges: enable_bidirectional_traversal
+  weighting: include_for_algorithms
+  temporal: timestamps_for_analysis
+
+indexing_strategy:
+  primary: automatic_on_vertex_id
+  secondary: on_filtered_properties
+  composite: for_multi_property_queries
+  balance: tradeoff_read_speed_vs_write_cost
+
+## DEPLOYMENT_OPTIONS_SUMMARY
+
+deployment_type_comparison:
+  docker:
+    ease: very_easy
+    control: medium
+    speed: 5_minutes
+    scalability: single_node
+    use_case: development_laptop
+  
+  bare_metal:
+    ease: medium
+    control: high
+    speed: 20_minutes
+    scalability: multi_node_manual
+    use_case: production_onprem
+  
+  kubernetes:
+    ease: hard
+    control: high
+    speed: 10_minutes
+    scalability: multi_node_auto
+    use_case: cloud_native
+  
+  savanna_cloud:
+    ease: very_easy
+    control: low
+    speed: instant
+    scalability: auto_elastic
+    use_case: zero_ops_managed
+
+## SECURITY_FEATURES
+
+authentication:
+  local_users: username_password
+  ldap: enterprise_directory
+  saml_oauth: identity_providers
+  api_tokens: programmatic_access
+
+authorization:
+  rbac: role_based_access_control
+  row_level: vertex_edge_filtering
+  query_level: restrict_query_execution
+
+encryption:
+  at_rest: aes_256
+  in_transit: tls_1_3
+  enforcement: configurable
+
+audit:
+  logging: all_operations_tracked
+  compliance: hipaa_pci_dss_soc2
+  retention: configurable_policies
+
+## TROUBLESHOOTING_DECISION_TREE
+
+issue_license_error:
+  solution: use_community_or_get_free_license
+  resource: section_license_management
+  support: discord_https_discord_gg_tnhpgR3j
+
+issue_out_of_memory:
+  solution: increase_jvm_heap_or_server_ram
+  command: gadmin_config_set_jvmheap_8g
+
+issue_slow_queries:
+  solution: add_indexes_use_explain_plan_optimize_filters
+  command: EXPLAIN_PLAN_FOR_@query_definition
+
+issue_connection_refused:
+  solution: verify_tigergraph_running_check_ports_firewall
+  command: gadmin_status
+
+issue_need_help:
+  immediate: discord_https_discord_gg_tnhpgR3j
+  message: tigergraph_team_will_help_for_sure
+  forum: https_dev_tigergraph_com_forum
+
+## QUICK_REFERENCE_TABLES
+
+### DOCKER_COMMANDS
+pull: docker pull tigergraph/tigergraph:4.2.2
+run: docker run -d --name tg-community -p 14240:14240 tigergraph/tigergraph:4.2.2
+status: docker exec tg-community gadmin status
+logs: docker logs -f tg-community
+shell: docker exec -it tg-community /bin/bash
+
+### SERVICE_MANAGEMENT
+start_all: gadmin start all
+stop_all: gadmin stop all
+restart: gadmin restart
+status: gadmin status
+logs: gadmin log tail GSQLServer
+
+### REST_API_CURL_EXAMPLES
+run_query: curl http://localhost:9000/query/graph/query_name?param=value
+insert_vertex: curl -X POST http://localhost:9000/graph/social/vertices/person -H Content-Type application/json -d {}
+get_vertex: curl http://localhost:9000/graph/social/vertices/person/id
+get_stats: curl http://localhost:9000/graph/social/stats
+
+### PYTHON_SDK_SNIPPETS
+import: from pytigergraph import TigerGraphConnection
+connect: conn = TigerGraphConnection(host=..., graphname=..., username=..., password=...)
+run_query: conn.runQuery(query_name, params)
+insert_vertex: conn.upsertVertex(type, id, attributes)
+insert_edge: conn.upsertEdge(from_type, from_id, edge_type, to_type, to_id, attributes)
+get_stats: conn.getGraphStats()
+
+## RESOURCE_URLS_ACTIONABLE
+
+download_community: https://www.tigergraph.com/community-edition/
+free_enterprise_license: https://www.tigergraph.com/enterprise-free/
+main_docs: https://docs.tigergraph.com/
+database_docs: https://docs.tigergraph.com/tigergraph-server/4.2/intro/
+gsql_docs: https://docs.tigergraph.com/gsql/current/
+savanna_docs: https://docs.tigergraph.com/savanna/main/overview/
+algorithms_docs: https://docs.tigergraph.com/graph-algorithm-library/current/
+discord_support: https://discord.gg/tnhpgR3j
+forum_support: https://dev.tigergraph.com/forum
+github_ecosystem: https://github.com/tigergraph/ecosys
+sales_contact: sales@tigergraph.com
+docker_hub: https://hub.docker.com/r/tigergraph/tigergraph/
+
+## AGENT_PARSING_INSTRUCTIONS
+
+how_to_extract:
+  - identify_section_by_heading
+  - extract_key_value_pairs_directly
+  - parse_nested_structures_hierarchically
+  - follow_decision_trees_for_troubleshooting
+  - reference_urls_for_external_resources
+
+priority_sections:
+  1_critical: support_information_license_installation
+  2_essential: apis_sdks_tools
+  3_important: data_loading_schema_design
+  4_reference: algorithms_security_detailed_features
+
+extraction_targets:
+  - product_capabilities
+  - installation_steps
+  - api_endpoints
+  - error_solutions
+  - resource_urls
+  - code_examples
+
+## END_DOCUMENT
+total_sections: 30_plus
+structured_for: ai_agent_comprehension
+not_for: human_reading
+last_updated: 2025_12_11_ist
