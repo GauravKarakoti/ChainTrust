@@ -54,9 +54,12 @@ export default function App() {
     }
   }, [])
 
-  // NEW: Fetch initial data on mount
   useEffect(() => {
-    handleSearch(searchedAddress)
+    if (searchedAddress) {
+      handleSearch(searchedAddress)
+    } else {
+      setIsLoading(false) // Stop loading indicator if empty
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

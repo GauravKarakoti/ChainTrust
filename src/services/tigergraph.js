@@ -1,9 +1,9 @@
 const TG_TOKEN = import.meta.env.VITE_TG_TOKEN;
 
-/**
- * Fetches the 3-hop transaction graph for a specific wallet address
- */
 export async function fetchWalletGraph(address) {
+  // 1. Return empty graph if no address is provided
+  if (!address) return { nodes: [], edges: [] }; 
+
   try {
     const response = await fetch(`/restpp/query/ChainTrustGraph/check_wallet_risk?target_wallet=${address}`, {
       method: 'GET',
@@ -15,7 +15,12 @@ export async function fetchWalletGraph(address) {
     
     const data = await response.json();
     
-    const nodes = data.results[0].Nodes.map(node => ({
+    // 2. Add safety check for API errors or empty results
+    if (data.error || !data.results || !data.results[0]) {
+      return { nodes: [], edges: [] };
+    }
+    
+    const nodes = (data.results[0].Nodes || []).map(node => ({
       data: { 
         id: node.v_id, 
         label: node.attributes.short_address, 
@@ -24,7 +29,7 @@ export async function fetchWalletGraph(address) {
       }
     }));
 
-    const edges = data.results[0].Edges.map(edge => ({
+    const edges = (data.results[0].Edges || []).map(edge => ({
       data: {
         id: edge.e_id,
         source: edge.from_id,
@@ -41,15 +46,21 @@ export async function fetchWalletGraph(address) {
   }
 }
 
-/**
- * Fetches the specific risk profile details for the inspector panel
- */
 export async function fetchWalletProfile(address) {
+  // 1. Return null early if no address
+  if (!address) return null; 
+
   try {
     const response = await fetch(`/restpp/graph/ChainTrustGraph/vertices/Wallet/${address}`, {
       headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
     });
     const data = await response.json();
+    
+    // 2. Safely check if results exist before accessing index 0
+    if (data.error || !data.results || !data.results[0]) {
+      return null;
+    }
+
     return data.results[0].attributes;
   } catch (error) {
     console.error('TigerGraph profile error:', error);
