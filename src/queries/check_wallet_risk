@@ -15,8 +15,7 @@ CREATE OR REPLACE QUERY check_wallet_risk(STRING target_wallet) FOR GRAPH ChainT
           WHERE s.address == target_wallet
           POST-ACCUM s.@calculated_risk = s.risk_level;
 
-  // Hop 1: Calculate volume and propagate risk
-  Hop1 = SELECT t FROM Start:s -(TRANSACTION:e)-> Wallet:t
+  Hop1 = SELECT t FROM Start:s -(TRANSACTION:e)- Wallet:t
          ACCUM @@edge_set += e,
                // FIX: Use toFloat() instead of str_to_float()
                t.@total_tx_volume += toFloat(e.amount),

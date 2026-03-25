@@ -24,7 +24,8 @@ export async function fetchWalletGraph(address) {
         id: node.v_id, 
         label: node.attributes.short_address, 
         type: node.v_type.toLowerCase(), 
-        risk: node.attributes.risk_level || 'UNKNOWN' // Will now be populated by API or GSQL
+        // Fallback to reading the dynamically calculated accumulator first
+        risk: node.attributes['@calculated_risk'] || node.attributes.risk_level || 'UNKNOWN'
       }
     }));
 
@@ -115,10 +116,11 @@ export async function syncWalletTransactions(address) {
       const riskData = await riskRes.json();
       
       let targetRisk = 'Safe';
-      if (riskData.result) {
-         // If any security flag from GoPlus is true ("1"), flag it as malicious
-         const isMalicious = Object.values(riskData.result).some(val => val === "1");
-         if (isMalicious) targetRisk = 'Critical Risk';
+      if (riskData.result && riskData.result[address.toLowerCase()]) {
+        const securityFlags = riskData.result[address.toLowerCase()];
+        // Now we are correctly checking the inner values (e.g., "phishing_activities": "1")
+        const isMalicious = Object.values(securityFlags).some(val => val === "1");
+        if (isMalicious) targetRisk = 'Critical Risk';
       }
       riskMap[address.toLowerCase()] = targetRisk;
     } catch (apiError) {
