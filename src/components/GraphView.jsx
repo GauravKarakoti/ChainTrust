@@ -1,16 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import cytoscape from 'cytoscape'
 import { getCytoscapeStyles, LAYOUT_CONFIG } from '../utils/graphStyles'
-import { WALLET_PROFILES } from '../data/mockData'
-
-const NODE_ICONS = {
-  CRITICAL: '☠',
-  HIGH: '⚠',
-  LOW: '✓',
-  SAFE: '✓',
-  MEDIUM: '~',
-  target: '◎',
-}
 
 export default function GraphView({ elements, onNodeSelect, selectedNode, filter }) {
   const containerRef = useRef(null)
@@ -36,12 +26,20 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
       maxZoom: 3,
     })
 
-    // Node click
     cy.on('tap', 'node', (evt) => {
       const node = evt.target
-      const id = node.id()
-      const profile = WALLET_PROFILES[id]
-      onNodeSelect(profile || { address: id, short: id, label: id, type: 'wallet', risk: 'UNKNOWN' })
+      const data = node.data() // ✅ Get node data from TigerGraph format
+
+      // ✅ Use TigerGraph attributes directly instead of mock profiles
+      onNodeSelect({
+        address: data.id,
+        short: data.label || data.id,
+        label: data.label || data.id,
+        type: data.type || 'wallet',
+        risk: data.risk || 'UNKNOWN',
+        // Optional: you can add a fetch call in App.jsx when onNodeSelect is triggered 
+        // to get the deep profile via fetchWalletProfile(data.id)
+      })
 
       // Highlight connected
       cy.elements().addClass('dimmed')

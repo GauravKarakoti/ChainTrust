@@ -1,5 +1,4 @@
 import TrustScoreRing from './TrustScoreRing'
-import { RISK_FACTORS } from '../data/mockData'
 
 const RISK_BADGE = {
   CRITICAL: 'bg-red-950 text-red-400 border-red-800',
@@ -25,6 +24,13 @@ const TAG_COLORS = {
   'exchange': 'bg-cyan-950 text-cyan-400',
   'suspicious': 'bg-amber-950 text-amber-400',
 }
+
+const RISK_FACTORS = [
+  { label: 'Illicit Activity', score: 85, max: 100, color: '#ef4444', desc: 'Direct connection to flagged entities' },
+  { label: 'Mixer Usage', score: 60, max: 100, color: '#f97316', desc: 'Interactions with coin mixers' },
+  { label: 'Sybil Pattern', score: 40, max: 100, color: '#eab308', desc: 'Wash trading or farming behavior' },
+  { label: 'Age & History', score: 10, max: 100, color: '#22c55e', desc: 'Account maturity score' }
+]
 
 export default function NodeInspector({ wallet, onClose }) {
   if (!wallet) return (
