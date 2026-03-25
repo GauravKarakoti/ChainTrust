@@ -58,24 +58,30 @@ export default function App() {
   }, []);
 
   const handleSearch = useCallback(async (address) => {
-    // 1. Normalize the address to match TigerGraph's stored lowercase IDs
     const normalizedAddress = address.toLowerCase();
     
     setIsLoading(true)
     setSelectedNode(null)
-    setSearchedAddress(normalizedAddress) // Use normalized here so the UI reflects it
+    setSearchedAddress(normalizedAddress) 
     
     try {
-      // 2. Pass the normalized address to ALL your service calls
       await syncWalletTransactions(normalizedAddress);
 
-      // Now TigerGraph will correctly match the Vertex IDs
       const tgGraphData = await fetchWalletGraph(normalizedAddress)
       const tgProfileData = await fetchWalletProfile(normalizedAddress)
       
+      // NEW: Extract the target node from the graph to inherit its calculated `risk`
+      const targetGraphNode = tgGraphData?.nodes.find(n => n.data.id === normalizedAddress)?.data;
+      
+      // NEW: Merge profile attributes with graph node data
+      const mergedProfile = {
+        ...tgProfileData,
+        ...targetGraphNode
+      };
+      
       setGraphElements(tgGraphData || { nodes: [], edges: [] })
-      setTargetProfile(tgProfileData || {})
-      setSelectedNode(tgProfileData || null)
+      setTargetProfile(mergedProfile || {})
+      setSelectedNode(mergedProfile || null)
     } catch (error) {
       console.error("Failed to fetch TigerGraph data:", error)
       setGraphElements({ nodes: [], edges: [] })

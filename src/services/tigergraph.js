@@ -138,7 +138,6 @@ export async function syncWalletTransactions(address) {
 }
 
 export async function fetchWalletProfile(address) {
-  // 1. Return null early if no address
   if (!address) return null; 
 
   try {
@@ -147,12 +146,19 @@ export async function fetchWalletProfile(address) {
     });
     const data = await response.json();
     
-    // 2. Safely check if results exist before accessing index 0
     if (data.error || !data.results || !data.results[0]) {
       return null;
     }
 
-    return data.results[0].attributes;
+    const attributes = data.results[0].attributes;
+    
+    // NEW: Normalize the attributes so `risk` and `address` are always explicitly defined
+    return {
+      ...attributes,
+      address: address,
+      short: attributes.short_address || address,
+      risk: (attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', '')
+    };
   } catch (error) {
     console.error('TigerGraph profile error:', error);
     return null;
