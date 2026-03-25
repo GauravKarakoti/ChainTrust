@@ -1,9 +1,14 @@
-import { useState } from 'react'
-import { PRESET_WALLETS } from '../data/mockData'
+import { useState, useEffect } from 'react'
+import { fetchPresetWallets } from '../services/tigergraph'
 
 export default function SearchBar({ onSearch, isLoading }) {
   const [value, setValue] = useState('')
   const [focused, setFocused] = useState(false)
+  const [presets, setPresets] = useState([])
+
+  useEffect(() => {
+    fetchPresetWallets().then(setPresets)
+  }, [])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -57,19 +62,21 @@ export default function SearchBar({ onSearch, isLoading }) {
       </form>
 
       {/* Preset buttons */}
-      <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
-        <span className="text-[10px] text-slate-600 uppercase tracking-widest flex-shrink-0">Quick load:</span>
-        {PRESET_WALLETS.map(({ address, risk, label }) => (
-          <button
-            key={address}
-            onClick={() => handlePreset(address)}
-            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-dark-800 hover:bg-dark-700 border border-[#1e2847] hover:border-slate-600 text-slate-400 hover:text-white rounded-lg transition-all"
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${RISK_DOT[risk] || 'bg-slate-500'}`} />
-            {label}
-          </button>
-        ))}
-      </div>
+      {presets.length > 0 && (
+        <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+          <span className="text-[10px] text-slate-600 uppercase tracking-widest flex-shrink-0">Quick load:</span>
+          {presets.map(({ address, risk, label }) => (
+            <button
+              key={address}
+              onClick={() => handlePreset(address)}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-dark-800 hover:bg-dark-700 border border-[#1e2847] hover:border-slate-600 text-slate-400 hover:text-white rounded-lg transition-all"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${RISK_DOT[risk] || 'bg-slate-500'}`} />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

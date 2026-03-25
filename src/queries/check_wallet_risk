@@ -1,0 +1,27 @@
+CREATE OR REPLACE QUERY check_wallet_risk(STRING target_wallet) FOR GRAPH ChainTrustGraph { 
+  
+  // Global edge accumulator
+  SetAccum<EDGE> @@edge_set;
+
+  // Get starting vertex from ID
+  Start = SELECT s FROM Wallet:s
+          WHERE s.address == target_wallet;
+
+  // Hop 1
+  Hop1 = SELECT t FROM Start:s -(TRANSACTION:e)-> Wallet:t
+         ACCUM @@edge_set += e;
+         
+  // Hop 2
+  Hop2 = SELECT t FROM Hop1:s -(TRANSACTION:e)-> Wallet:t
+         ACCUM @@edge_set += e;
+         
+  // Hop 3
+  Hop3 = SELECT t FROM Hop2:s -(TRANSACTION:e)-> Wallet:t
+         ACCUM @@edge_set += e;
+
+  // Combine all nodes
+  All_Nodes = Start UNION Hop1 UNION Hop2 UNION Hop3;
+
+  PRINT All_Nodes AS Nodes;
+  PRINT @@edge_set AS Edges;
+}

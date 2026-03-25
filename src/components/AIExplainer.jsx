@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { AI_EXPLANATIONS } from '../data/mockData'
+import { fetchAIExplanations } from '../services/tigergraph'
 
 function parseMarkdown(text) {
   return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-white">$1</strong>')
@@ -9,10 +9,9 @@ export default function AIExplainer({ wallet }) {
   const [displayedText, setDisplayedText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [explanationIndex, setExplanationIndex] = useState(0)
+  const [explanations, setExplanations] = useState([])
   const timerRef = useRef(null)
   const fullTextRef = useRef('')
-
-  const getExplanations = (risk) => AI_EXPLANATIONS[risk] || AI_EXPLANATIONS['MEDIUM']
 
   const typeText = (text) => {
     setDisplayedText('')
@@ -31,17 +30,29 @@ export default function AIExplainer({ wallet }) {
   }
 
   useEffect(() => {
-    if (!wallet) return
-    const explanations = getExplanations(wallet.risk)
-    const idx = 0
-    setExplanationIndex(0)
-    typeText(explanations[idx])
-    return () => clearInterval(timerRef.current)
+    if (!wallet) return;
+    
+    let isMounted = true;
+    
+    async function loadExplanations() {
+      // Use address (or short as fallback identifier)
+      const data = await fetchAIExplanations(wallet.address || wallet.short);
+      if (!isMounted) return;
+      setExplanations(data);
+      setExplanationIndex(0);
+      typeText(data[0] || "Analysis complete. Review wallet flags.");
+    }
+    
+    loadExplanations();
+    
+    return () => {
+      isMounted = false;
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [wallet])
 
   const handleNext = () => {
-    if (!wallet) return
-    const explanations = getExplanations(wallet.risk)
+    if (!wallet || explanations.length === 0) return
     const next = (explanationIndex + 1) % explanations.length
     setExplanationIndex(next)
     typeText(explanations[next])
@@ -75,8 +86,6 @@ export default function AIExplainer({ wallet }) {
       </div>
     )
   }
-
-  const explanations = getExplanations(wallet.risk)
 
   return (
     <div className="bg-dark-800 border border-[#1e2847] rounded-xl p-5 flex flex-col h-full">
@@ -132,7 +141,7 @@ export default function AIExplainer({ wallet }) {
                   : 'Recommendation: Avoid interaction'}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Trust Score: <span className="mono font-semibold text-slate-300">{wallet.trustScore}/100</span>
+                Trust Score: <span className="mono font-semibold text-slate-300">{wallet.trustScore || 0}/100</span>
               </p>
             </div>
           </div>
@@ -154,10 +163,12 @@ export default function AIExplainer({ wallet }) {
                 Next Finding ({explanationIndex + 1}/{explanations.length})
               </button>
             )}
-            <button onClick={() => typeText(explanations[explanationIndex])}
-              className="py-2 px-4 text-xs bg-purple-900/40 hover:bg-purple-900/60 border border-purple-800 text-purple-300 rounded-lg transition-all">
-              ↺ Re-run
-            </button>
+            {explanations.length > 0 && (
+              <button onClick={() => typeText(explanations[explanationIndex])}
+                className="py-2 px-4 text-xs bg-purple-900/40 hover:bg-purple-900/60 border border-purple-800 text-purple-300 rounded-lg transition-all">
+                ↺ Re-run
+              </button>
+            )}
           </>
         )}
       </div>

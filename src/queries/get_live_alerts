@@ -1,0 +1,28 @@
+CREATE OR REPLACE QUERY get_live_alerts() FOR GRAPH ChainTrustGraph SYNTAX v2 {
+  TYPEDEF TUPLE <INT id, STRING severity, STRING timestamp, STRING title, STRING description, STRING pattern, BOOL isNew> AlertTuple;
+  ListAccum<AlertTuple> @@alerts_list;
+  
+  INT current_time = datetime_to_epoch(now());
+  
+  // Traverse the graph to find high-risk wallets making transactions
+  RecentTxs = SELECT s FROM Wallet:s -(_>:e)- Wallet:t
+              WHERE type(e) == "TRANSACTION" 
+              // AND e.block_timestamp > datetime_sub(now(), INTERVAL 5 MINUTE)
+              AND (s.risk_level == "CRITICAL" OR s.risk_level == "HIGH")
+              
+              // DYNAMICALLY generate alerts based on the real data
+              ACCUM @@alerts_list += AlertTuple(
+                current_time + getvid(s), 
+                s.risk_level, 
+                "Recently", 
+                "High-Risk Transfer", 
+                // Note: Make sure 'short_address' matches your schema's wallet string attribute
+                "Wallet " + s.short_address + " interacted with another entity.", 
+                // FIX: Used CASE WHEN for inline conditional assignment
+                CASE WHEN s.risk_level == "CRITICAL" THEN "MIXER" ELSE "WASH_TRADE" END, 
+                true
+              )
+              LIMIT 12; 
+              
+  PRINT @@alerts_list AS Alerts;
+}

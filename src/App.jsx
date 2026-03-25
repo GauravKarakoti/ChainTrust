@@ -21,7 +21,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true) // Start loading on mount
   const [graphFilter, setGraphFilter] = useState('ALL')
   const [activeTab, setActiveTab] = useState('inspector') 
-  const [searchedAddress, setSearchedAddress] = useState('0x7a23...f4c1')
+  const [searchedAddress, setSearchedAddress] = useState('')
   const [graphKey, setGraphKey] = useState(0)
   
   // NEW: State for TigerGraph data

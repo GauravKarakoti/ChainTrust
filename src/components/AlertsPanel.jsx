@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ALERTS } from '../data/mockData'
+import { fetchLiveAlerts } from '../services/tigergraph'
 
 const SEVERITY_CONFIG = {
   CRITICAL: { bg: 'bg-red-950/50', border: 'border-red-900', text: 'text-red-400', dot: 'bg-red-500', badge: 'bg-red-950 text-red-400 border-red-800' },
@@ -16,30 +16,27 @@ const PATTERN_ICONS = {
   BURST: '⚡',
 }
 
-// FIX: Added isExpanded and onToggleExpand props
 export default function AlertsPanel({ isExpanded, onToggleExpand }) {
-  const [alerts, setAlerts] = useState(ALERTS)
+  const [alerts, setAlerts] = useState([])
   const [newAlertPulse, setNewAlertPulse] = useState(false)
   const [filter, setFilter] = useState('ALL')
   const [dismissed, setDismissed] = useState(new Set())
 
-  // Simulate incoming real-time alerts
+  // Poll TigerGraph for Live Alerts
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newAlert = {
-        id: Date.now(),
-        severity: ['HIGH', 'MEDIUM', 'CRITICAL'][Math.floor(Math.random() * 3)],
-        timestamp: 'just now',
-        title: 'New Pattern Detected',
-        description: 'Suspicious multi-hop transfer detected from target wallet cluster.',
-        pattern: ['WASH_TRADE', 'SYBIL', 'BURST'][Math.floor(Math.random() * 3)],
-        isNew: true,
+    // Initial fetch
+    fetchLiveAlerts().then(data => setAlerts(data.slice(0, 12)))
+
+    const interval = setInterval(async () => {
+      const freshAlerts = await fetchLiveAlerts();
+      if (freshAlerts && freshAlerts.length > 0) {
+        setAlerts(freshAlerts.slice(0, 12));
+        setNewAlertPulse(true);
+        setTimeout(() => setNewAlertPulse(false), 2000);
       }
-      setAlerts(prev => [newAlert, ...prev].slice(0, 12))
-      setNewAlertPulse(true)
-      setTimeout(() => setNewAlertPulse(false), 2000)
-    }, 15000)
-    return () => clearInterval(interval)
+    }, 15000); // 15s polling window
+    
+    return () => clearInterval(interval);
   }, [])
 
   const dismiss = (id) => setDismissed(prev => new Set([...prev, id]))

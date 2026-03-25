@@ -1,14 +1,11 @@
-import 'dotenv/config';
-
-const TG_URL = process.env.TG_URL;
-const TG_TOKEN = process.env.TG_TOKEN;
+const TG_URL = import.meta.env.TG_URL;
+const TG_TOKEN = import.meta.env.TG_TOKEN;
 
 /**
  * Fetches the 3-hop transaction graph for a specific wallet address
  */
 export async function fetchWalletGraph(address) {
   try {
-    // Calling a custom GSQL query named 'check_wallet_risk'
     const response = await fetch(`${TG_URL}/restpp/query/ChainTrustGraph/check_wallet_risk?target_wallet=${address}`, {
       method: 'GET',
       headers: {
@@ -19,7 +16,6 @@ export async function fetchWalletGraph(address) {
     
     const data = await response.json();
     
-    // Transform TigerGraph JSON output into Cytoscape format
     const nodes = data.results[0].Nodes.map(node => ({
       data: { 
         id: node.v_id, 
@@ -50,10 +46,60 @@ export async function fetchWalletGraph(address) {
  * Fetches the specific risk profile details for the inspector panel
  */
 export async function fetchWalletProfile(address) {
-  const response = await fetch(`${TG_URL}/restpp/graph/ChainTrustGraph/vertices/Wallet/${address}`, {
-    headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
-  });
-  const data = await response.json();
-  
-  return data.results[0].attributes;
+  try {
+    const response = await fetch(`${TG_URL}/restpp/graph/ChainTrustGraph/vertices/Wallet/${address}`, {
+      headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
+    });
+    const data = await response.json();
+    return data.results[0].attributes;
+  } catch (error) {
+    console.error('TigerGraph profile error:', error);
+    return null;
+  }
+}
+
+/**
+ * Fetches preset wallet queries for the search bar
+ */
+export async function fetchPresetWallets() {
+  try {
+    const response = await fetch(`${TG_URL}/restpp/query/ChainTrustGraph/get_preset_wallets`, {
+      headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
+    });
+    const data = await response.json();
+    return data.results[0].Presets || [];
+  } catch (error) {
+    console.error('Failed to fetch presets:', error);
+    return [];
+  }
+}
+
+export async function fetchAIExplanations(address) {
+  try {
+    // FIX: Changed ?wallet= to ?wallet_id= to match the GSQL query parameter
+    const response = await fetch(`${TG_URL}/restpp/query/ChainTrustGraph/generate_ai_explanation?wallet_id=${address}`, {
+      headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
+    });
+    const data = await response.json();
+    return data.results[0].explanations || ["No analysis available for this wallet."];
+  } catch (error) {
+    console.error('Failed to fetch AI explanations:', error);
+    return ["TigerGraph connection failed. Unable to generate explanation."];
+  }
+}
+
+/**
+ * Fetches live real-time network alerts
+ */
+export async function fetchLiveAlerts() {
+  try {
+    const response = await fetch(`${TG_URL}/restpp/query/ChainTrustGraph/get_live_alerts`, {
+      headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
+    });
+    const data = await response.json();
+    return data.results[0].Alerts || [];
+  } catch (error) {
+    console.error('Failed to fetch alerts:', error);
+    return [];
+  }
 }

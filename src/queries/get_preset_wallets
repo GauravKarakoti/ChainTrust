@@ -1,0 +1,17 @@
+CREATE OR REPLACE QUERY get_preset_wallets() FOR GRAPH ChainTrustGraph SYNTAX v2 {
+  // Define the structure expected by the React frontend
+  TYPEDEF TUPLE <STRING address, STRING risk, STRING label> PresetTuple;
+  ListAccum<PresetTuple> @@preset_list;
+
+  Start = {Wallet.*};
+  
+  // Replace 'w.label' with the actual attribute from your schema (e.g., w.short_address)
+  // Also ensure 'w.address' is correct (often the primary ID is accessed via w.id)
+  Presets = SELECT w FROM Start:w
+            WHERE w.is_preset == true
+            ACCUM @@preset_list += PresetTuple(w.address, w.risk_level, w.short_address)
+            LIMIT 5;
+
+  // The frontend expects: data.results[0].Presets
+  PRINT @@preset_list AS Presets;
+}
