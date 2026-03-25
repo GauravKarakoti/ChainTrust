@@ -1,26 +1,82 @@
 CREATE OR REPLACE QUERY check_wallet_risk(STRING target_wallet) FOR GRAPH ChainTrustGraph { 
   
-  // Global edge accumulator
+  // Accumulators for calculating dynamic risk metrics
+  SumAccum<FLOAT> @total_tx_volume;
+  SumAccum<INT> @tx_count;
+  MaxAccum<STRING> @calculated_risk;
   SetAccum<EDGE> @@edge_set;
-
-  // Get starting vertex from ID
+  
+  // Accumulators for passing risk state safely across edges
+  OrAccum @exposed_to_critical;
+  OrAccum @exposed_to_high;
+  
+  // Get starting vertex from ID and initialize its risk
   Start = SELECT s FROM Wallet:s
-          WHERE s.address == target_wallet;
+          WHERE s.address == target_wallet
+          POST-ACCUM s.@calculated_risk = s.risk_level;
 
-  // Hop 1
+  // Hop 1: Calculate volume and propagate risk
   Hop1 = SELECT t FROM Start:s -(TRANSACTION:e)-> Wallet:t
-         ACCUM @@edge_set += e;
-         
-  // Hop 2
+         ACCUM @@edge_set += e,
+               // FIX: Use toFloat() instead of str_to_float()
+               t.@total_tx_volume += toFloat(e.amount),
+               t.@tx_count += 1,
+               // Evaluate source risk in ACCUM (where 's' is valid)
+               IF s.@calculated_risk == "Critical Risk" THEN
+                   t.@exposed_to_critical += true
+               END
+         POST-ACCUM 
+               // 1. Keep existing known risk if it exists
+               IF t.risk_level != "" AND t.risk_level != "UNKNOWN" THEN
+                   t.@calculated_risk = t.risk_level
+               // 2. High frequency or high volume heuristic
+               ELSE IF t.@tx_count > 10 OR t.@total_tx_volume > 50 THEN
+                   t.@calculated_risk = "High Risk"
+               // 3. Risk Propagation: evaluates the flag set during ACCUM
+               ELSE IF t.@exposed_to_critical THEN
+                   t.@calculated_risk = "High Risk"
+               // 4. Fallback to Safe
+               ELSE
+                   t.@calculated_risk = "Safe"
+               END;
+
+  // Hop 2: Continue propagating risk from Hop 1
   Hop2 = SELECT t FROM Hop1:s -(TRANSACTION:e)-> Wallet:t
-         ACCUM @@edge_set += e;
-         
-  // Hop 3
+         ACCUM @@edge_set += e,
+               t.@total_tx_volume += toFloat(e.amount),
+               t.@tx_count += 1,
+               IF s.@calculated_risk == "Critical Risk" OR s.@calculated_risk == "High Risk" THEN
+                   t.@exposed_to_high += true
+               END
+         POST-ACCUM
+               IF t.risk_level != "" AND t.risk_level != "UNKNOWN" THEN
+                   t.@calculated_risk = t.risk_level
+               ELSE IF t.@exposed_to_high THEN
+                   t.@calculated_risk = "High Risk" // 2nd-degree exposure
+               ELSE
+                   t.@calculated_risk = "Safe"
+               END;
+
+  // Hop 3: Final collection (no deep propagation needed here)
   Hop3 = SELECT t FROM Hop2:s -(TRANSACTION:e)-> Wallet:t
-         ACCUM @@edge_set += e;
+         ACCUM @@edge_set += e
+         POST-ACCUM
+               IF t.risk_level != "" AND t.risk_level != "UNKNOWN" THEN
+                   t.@calculated_risk = t.risk_level
+               ELSE
+                   t.@calculated_risk = "Safe"
+               END;
 
   // Combine all nodes
   All_Nodes = Start UNION Hop1 UNION Hop2 UNION Hop3;
+
+  // Temporarily assign the dynamically calculated risk to the attribute 
+  // so the JSON output matches the frontend's expected schema exactly.
+  All_Nodes = SELECT s FROM All_Nodes:s
+              POST-ACCUM 
+                  IF s.@calculated_risk != "" THEN
+                      s.risk_level = s.@calculated_risk
+                  END;
 
   PRINT All_Nodes AS Nodes;
   PRINT @@edge_set AS Edges;

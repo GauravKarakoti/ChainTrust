@@ -2,7 +2,6 @@ const TG_TOKEN = import.meta.env.VITE_TG_TOKEN;
 const ETHERSCAN_KEY = import.meta.env.VITE_ETHERSCAN_API_KEY;
 
 export async function fetchWalletGraph(address) {
-  // 1. Return empty graph if no address is provided
   if (!address) return { nodes: [], edges: [] }; 
 
   try {
@@ -16,7 +15,6 @@ export async function fetchWalletGraph(address) {
     
     const data = await response.json();
     
-    // 2. Add safety check for API errors or empty results
     if (data.error || !data.results || !data.results[0]) {
       return { nodes: [], edges: [] };
     }
@@ -26,7 +24,7 @@ export async function fetchWalletGraph(address) {
         id: node.v_id, 
         label: node.attributes.short_address, 
         type: node.v_type.toLowerCase(), 
-        risk: node.attributes.risk_level 
+        risk: node.attributes.risk_level || 'UNKNOWN' // Will now be populated by API or GSQL
       }
     }));
 
@@ -47,7 +45,8 @@ export async function fetchWalletGraph(address) {
   }
 }
 
-export async function upsertGraphData(transactions) {
+// 1. NEW: Added riskMap parameter to populate risk_level during upsert
+export async function upsertGraphData(transactions, riskMap = {}) {
   const payload = {
     vertices: { "Wallet": {} },
     edges: { "Wallet": {} }
@@ -56,11 +55,13 @@ export async function upsertGraphData(transactions) {
   transactions.forEach(tx => {
     payload.vertices.Wallet[tx.from] = { 
         "address": { "value": tx.from }, 
-        "short_address": { "value": tx.from.substring(0,6) } 
+        "short_address": { "value": tx.from.substring(0,6) },
+        "risk_level": { "value": riskMap[tx.from] || 'UNKNOWN' } 
     };
     payload.vertices.Wallet[tx.to] = { 
         "address": { "value": tx.to }, 
-        "short_address": { "value": tx.to.substring(0,6) } 
+        "short_address": { "value": tx.to.substring(0,6) },
+        "risk_level": { "value": riskMap[tx.to] || 'UNKNOWN' }
     };
 
     if (!payload.edges.Wallet[tx.from]) {
@@ -81,19 +82,16 @@ export async function upsertGraphData(transactions) {
     body: JSON.stringify(payload)
   });
 
-  // Add this to catch ingestion errors:
   if (!response.ok) {
     const errorData = await response.json();
     console.error("TigerGraph Ingestion Failed:", errorData);
   }
 }
 
-// 2. NEW: Function to lazy-load data from Etherscan and push to TigerGraph
 export async function syncWalletTransactions(address) {
   if (!address) return;
 
   try {
-    // Fetch the last 50 transactions for this wallet from Etherscan
     const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=50&sort=desc&apikey=${ETHERSCAN_KEY}`;
     
     const response = await fetch(url);
@@ -104,16 +102,31 @@ export async function syncWalletTransactions(address) {
       return;
     }
 
-    // Map Etherscan's schema to your expected transaction schema
     const transactions = data.result.map(tx => ({
       from: tx.from.toLowerCase(),
       to: tx.to.toLowerCase(),
-      // Convert Wei to ETH and stringify it
       value: (Number(tx.value) / 1e18).toFixed(4) 
     }));
 
-    // Push the formatted payload into TigerGraph instantly
-    await upsertGraphData(transactions);
+    // 2. NEW: Call GoPlus Security API to get risk level for the target wallet
+    const riskMap = {};
+    try {
+      const riskRes = await fetch(`https://api.gopluslabs.io/api/v1/address_security/${address}?chain_id=1`);
+      const riskData = await riskRes.json();
+      
+      let targetRisk = 'Safe';
+      if (riskData.result) {
+         // If any security flag from GoPlus is true ("1"), flag it as malicious
+         const isMalicious = Object.values(riskData.result).some(val => val === "1");
+         if (isMalicious) targetRisk = 'Critical Risk';
+      }
+      riskMap[address.toLowerCase()] = targetRisk;
+    } catch (apiError) {
+      console.warn("GoPlus Risk API failed, falling back to GSQL logic:", apiError);
+    }
+
+    // Pass the riskMap into upsert
+    await upsertGraphData(transactions, riskMap);
     console.log(`✅ Synced ${transactions.length} transactions for ${address} to TigerGraph`);
     
   } catch (error) {
