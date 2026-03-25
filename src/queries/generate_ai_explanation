@@ -2,40 +2,40 @@ CREATE OR REPLACE QUERY generate_ai_explanation(STRING wallet_id) FOR GRAPH Chai
   ListAccum<STRING> @@explanations;
   SumAccum<INT> @tx_count;
   SumAccum<INT> @flagged_connections;
-  STRING risk_level = "UNKNOWN";
+  MaxAccum<STRING> @@risk_level; // Use an accumulator instead of a local STRING
 
-  // FIX: Use generic VERTEX type to receive the output of to_vertex()
   VERTEX target_wallet = to_vertex(wallet_id, "Wallet");
   Start = {target_wallet};
 
-  // 1. Analyze the wallet's direct attributes
+  // 1. Analyze the wallet's direct attributes using POST-ACCUM
   AnalyzeNode = SELECT w FROM Start:w
-                ACCUM risk_level = w.risk_level;
+                POST-ACCUM @@risk_level += w.risk_level;
 
   // 2. Traverse 1-hop to see what this wallet connects to
-  // Using wildcard edge (_) and filtering by type to avoid the TRANSACTION reserved keyword error
   Connections = SELECT t FROM Start:s -(_>:e)- Wallet:t
                 WHERE type(e) == "TRANSACTION"
                 ACCUM 
                   s.@tx_count += 1,
-                  IF t.risk_level == "CRITICAL" OR t.risk_level == "HIGH" THEN
+                  IF t.risk_level == "CRITICAL" OR t.risk_level == "HIGH" OR t.risk_level == "Critical Risk" THEN
                      s.@flagged_connections += 1
                   END;
 
+  // Normalize risk string for checks
+  STRING risk_str = @@risk_level;
+
   // 3. Generate dynamic text based on graph topology
-  IF risk_level == "CRITICAL" THEN
+  IF risk_str == "CRITICAL" OR risk_str == "Critical Risk" THEN
     @@explanations += "**CRITICAL RISK DETECTED**";
     @@explanations += "This wallet is deeply embedded in a high-risk cluster.";
     @@explanations += "Direct 1-hop connections to **sanctioned entities** or known exploiters.";
-  ELSE IF risk_level == "HIGH" THEN
+  ELSE IF risk_str == "HIGH" OR risk_str == "High Risk" THEN
     @@explanations += "**HIGH RISK WARNING**";
     @@explanations += "Wallet exhibits **sybil-like behavior** or wash trading patterns.";
     @@explanations += "Frequent interactions with decentralized coin mixers (e.g., Tornado Cash).";
-  ELSE IF risk_level == "MEDIUM" THEN
+  ELSE IF risk_str == "MEDIUM" THEN
     @@explanations += "**SUSPICIOUS ACTIVITY**";
     @@explanations += "Some interactions with medium-risk contracts or unverified tokens.";
-    @@explanations += "Monitor closely for further rapid fund dispersion.";
-  ELSE IF risk_level == "SAFE" OR risk_level == "LOW" THEN
+  ELSE IF risk_str == "SAFE" OR risk_str == "LOW" OR risk_str == "Safe" THEN
     @@explanations += "**SAFE / LOW RISK**";
     @@explanations += "Normal transaction patterns observed across centralized exchanges.";
     @@explanations += "No direct links to sanctioned, flagged, or illicit clusters.";
@@ -43,6 +43,5 @@ CREATE OR REPLACE QUERY generate_ai_explanation(STRING wallet_id) FOR GRAPH Chai
     @@explanations += "No significant risk patterns detected or wallet is unknown.";
   END;
 
-  // The frontend expects: data.results[0].explanations
   PRINT @@explanations AS explanations;
 }

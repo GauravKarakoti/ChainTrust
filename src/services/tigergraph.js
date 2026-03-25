@@ -24,8 +24,8 @@ export async function fetchWalletGraph(address) {
         id: node.v_id, 
         label: node.attributes.short_address, 
         type: node.v_type.toLowerCase(), 
-        // Fallback to reading the dynamically calculated accumulator first
-        risk: node.attributes['@calculated_risk'] || node.attributes.risk_level || 'UNKNOWN'
+        // Force uppercase and strip the word "RISK" to match the UI enums
+        risk: (node.attributes['@calculated_risk'] || node.attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', '')
       }
     }));
 
@@ -115,12 +115,11 @@ export async function syncWalletTransactions(address) {
       const riskRes = await fetch(`https://api.gopluslabs.io/api/v1/address_security/${address}?chain_id=1`);
       const riskData = await riskRes.json();
       
-      let targetRisk = 'Safe';
+      let targetRisk = 'SAFE'; // Changed from 'Safe'
       if (riskData.result && riskData.result[address.toLowerCase()]) {
         const securityFlags = riskData.result[address.toLowerCase()];
-        // Now we are correctly checking the inner values (e.g., "phishing_activities": "1")
         const isMalicious = Object.values(securityFlags).some(val => val === "1");
-        if (isMalicious) targetRisk = 'Critical Risk';
+        if (isMalicious) targetRisk = 'CRITICAL'; // Changed from 'Critical Risk'
       }
       riskMap[address.toLowerCase()] = targetRisk;
     } catch (apiError) {

@@ -20,23 +20,18 @@ CREATE OR REPLACE QUERY check_wallet_risk(STRING target_wallet) FOR GRAPH ChainT
                // FIX: Use toFloat() instead of str_to_float()
                t.@total_tx_volume += toFloat(e.amount),
                t.@tx_count += 1,
-               // Evaluate source risk in ACCUM (where 's' is valid)
-               IF s.@calculated_risk == "Critical Risk" THEN
+               IF s.@calculated_risk == "CRITICAL" OR s.@calculated_risk == "Critical Risk" THEN
                    t.@exposed_to_critical += true
                END
          POST-ACCUM 
-               // 1. Keep existing known risk if it exists
                IF t.risk_level != "" AND t.risk_level != "UNKNOWN" THEN
                    t.@calculated_risk = t.risk_level
-               // 2. High frequency or high volume heuristic
                ELSE IF t.@tx_count > 10 OR t.@total_tx_volume > 50 THEN
-                   t.@calculated_risk = "High Risk"
-               // 3. Risk Propagation: evaluates the flag set during ACCUM
+                   t.@calculated_risk = "HIGH"
                ELSE IF t.@exposed_to_critical THEN
-                   t.@calculated_risk = "High Risk"
-               // 4. Fallback to Safe
+                   t.@calculated_risk = "HIGH"
                ELSE
-                   t.@calculated_risk = "Safe"
+                   t.@calculated_risk = "SAFE"
                END;
 
   // Hop 2: Continue propagating risk from Hop 1

@@ -42,11 +42,27 @@ export default function NodeInspector({ wallet, onClose }) {
     </div>
   )
 
-  const riskFactors = wallet.risk === 'HIGH' || wallet.risk === 'CRITICAL' ? RISK_FACTORS : RISK_FACTORS.map(f => ({
-    ...f,
-    score: wallet.risk === 'SAFE' ? 80 + Math.floor(Math.random() * 20) : f.score,
-    color: wallet.risk === 'SAFE' ? '#10b981' : f.color,
-  }))
+  const seed = wallet.short ? wallet.short.charCodeAt(0) + wallet.short.charCodeAt(1) : 0;
+  const variance = (seed % 15) - 7; // Fluctuates score by -7 to +7 points
+
+  const riskFactors = RISK_FACTORS.map(f => {
+    let finalScore = f.score;
+    let finalColor = f.color;
+
+    if (wallet.risk === 'SAFE' || wallet.risk === 'LOW') {
+      // Safe wallets should have near-zero scores for illicit behaviors
+      finalScore = f.label === 'Age & History' ? 80 + variance : Math.max(0, 5 + variance);
+      finalColor = '#10b981';
+    } else if (wallet.risk === 'MEDIUM') {
+      finalScore = Math.max(10, f.score - 30 + variance);
+      finalColor = '#eab308';
+    } else {
+      // HIGH or CRITICAL: Keep core scores intact but append slight visual variety
+      finalScore = Math.min(100, Math.max(0, f.score + variance));
+    }
+
+    return { ...f, score: finalScore, color: finalColor };
+  });
 
   return (
     <div className="h-full flex flex-col overflow-y-auto">
