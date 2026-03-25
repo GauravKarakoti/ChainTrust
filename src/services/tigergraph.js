@@ -1,5 +1,9 @@
+import Groq from "groq-sdk";
+
 const TG_TOKEN = import.meta.env.VITE_TG_TOKEN;
 const ETHERSCAN_KEY = import.meta.env.VITE_ETHERSCAN_API_KEY;
+
+export const groq = new Groq({apiKey: import.meta.env.VITE_GROQ_API_KEY, dangerouslyAllowBrowser: true});
 
 export async function fetchWalletGraph(address) {
   if (!address) return { nodes: [], edges: [] }; 
@@ -183,15 +187,55 @@ export async function fetchPresetWallets() {
 
 export async function fetchAIExplanations(address) {
   try {
-    // FIX: Changed ?wallet= to ?wallet_id= to match the GSQL query parameter
-    const response = await fetch(`/restpp/query/ChainTrustGraph/generate_ai_explanation?wallet_id=${address}`, {
+    // 1. Fetch graph metrics from TigerGraph
+    const tgResponse = await fetch(`/restpp/query/ChainTrustGraph/generate_ai_explanation?wallet_id=${address}`, {
       headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
     });
-    const data = await response.json();
-    return data.results[0].explanations || ["No analysis available for this wallet."];
+    const tgData = await tgResponse.json();
+
+    if (tgData.error || !tgData.results || !tgData.results[0]) {
+      return ["Failed to retrieve network metrics from TigerGraph."];
+    }
+
+    const metrics = tgData.results[0];
+    const baseRisk = metrics.base_risk || "UNKNOWN";
+    const totalTxs = metrics.total_txs || 0;
+    const flaggedTxs = metrics.flagged_txs || 0;
+    const riskRatio = metrics.risk_ratio || 0;
+    
+    if (!groq) {
+      return [`Metrics: ${baseRisk} risk, ${totalTxs} txs.`, "Add VITE_GROQ_API_KEY to enable AI."];
+    }
+
+    // 2. Updated Prompt: Includes the word "json" to satisfy the API requirement
+    // and specifies a structured array format for the UI.
+    const prompt = `You are a cybersecurity blockchain analyst. Analyze this wallet: ${address}.
+    Metrics: Risk ${baseRisk}, Total Txs ${totalTxs}, Flagged Txs ${flaggedTxs}, Exposure ${riskRatio}%.
+    
+    Provide a 3-sentence risk assessment. Format your response as a JSON object containing an array of strings named "explanations". 
+    Each string should be one sentence. Use **markdown bolding** for key numbers.
+    Example: { "explanations": ["line 1", "line 2", "line 3"] }`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: "You are a helpful assistant that outputs only valid JSON." },
+        { role: "user", content: prompt }
+      ],
+      model: "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
+    });
+
+    // 3. Parse and return the array
+    const content = JSON.parse(completion.choices[0]?.message.content || '{"explanations": []}');
+    
+    // Return the array directly so AIExplainer.jsx can map through it
+    return content.explanations && content.explanations.length > 0 
+      ? content.explanations 
+      : ["Analysis complete. No specific threats identified."];
+
   } catch (error) {
-    console.error('Failed to fetch AI explanations:', error);
-    return ["TigerGraph connection failed. Unable to generate explanation."];
+    console.error('Failed to generate AI explanation:', error);
+    return ["TigerGraph metrics processed, but AI generation failed. Please check console."];
   }
 }
 
