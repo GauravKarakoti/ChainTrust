@@ -19,25 +19,30 @@ export async function fetchWalletGraph(address) {
     
     const data = await response.json();
     
-    if (data.error || !data.results || !data.results[0]) {
+    if (data.error || !data.results || data.results.length === 0) {
       return { nodes: [], edges: [] };
     }
     
-    const nodes = (data.results[0].Nodes || []).map(node => ({
+    // Find the objects containing Nodes and Edges respectively
+    const nodesData = data.results.find(r => r.Nodes)?.Nodes || [];
+    const edgesData = data.results.find(r => r.Edges)?.Edges || [];
+    
+    const nodes = nodesData.map(node => ({
       data: { 
         id: node.v_id, 
         label: node.attributes.short_address, 
         type: node.v_type.toLowerCase(), 
         risk: (node.attributes['@calculated_risk'] || node.attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', ''),
-        // Add these two lines to pass the data to the inspector/AI explainer
         address: node.v_id, 
         short: node.attributes.short_address
       }
     }));
 
-    const edges = (data.results[0].Edges || []).map(edge => ({
+    const edges = edgesData.map(edge => ({
       data: {
-        id: edge.e_id,
+        // TigerGraph doesn't always return a native e_id. 
+        // Using a composite ID prevents graph rendering bugs if e_id is undefined.
+        id: edge.e_id || `${edge.from_id}-${edge.to_id}`, 
         source: edge.from_id,
         target: edge.to_id,
         type: edge.e_type,
