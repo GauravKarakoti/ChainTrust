@@ -156,3 +156,53 @@ body {
 .hex-badge {
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
 }
+
+.status-panel.loading {
+  padding: 1rem;
+  font-style: italic;
+  color: #666;
+}
+
+/* State B: Running (Connected Section) */
+.connected-panel {
+  border: 1px solid green;
+  padding: 1rem;
+  border-radius: 4px; 
+}
+
+.connected-panel h3 {
+  color: green;
+  margin-top: 0;
+}
+
+/* State C: Stopped or Resuming (Offline Section) */
+.offline-panel {
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.offline-panel h3 {
+  color: gray;
+  margin-top: 0;
+}
+
+.resume-btn {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  background-color: #007bff; /* Standard active blue */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.resume-btn:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.resume-btn:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}

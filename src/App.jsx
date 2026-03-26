@@ -6,6 +6,7 @@ import AlertsPanel from './components/AlertsPanel'
 import SearchBar from './components/SearchBar'
 import TrustScoreRing from './components/TrustScoreRing'
 import { fetchWalletGraph, fetchWalletProfile, syncWalletTransactions } from './services/tigergraph'
+import TigerGraphWorkspace from './components/TigerGraphWorkspace'
 
 const FILTER_OPTIONS = ['ALL', 'CRITICAL', 'HIGH', 'SAFE']
 
@@ -121,7 +122,7 @@ export default function App() {
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              TigerGraph Connected
+              <TigerGraphWorkspace />
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-blue-400">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
