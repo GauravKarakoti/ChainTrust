@@ -160,13 +160,32 @@ export async function fetchWalletProfile(address) {
     }
 
     const attributes = data.results[0].attributes;
+    const risk = (attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', '');
     
-    // NEW: Normalize the attributes so `risk` and `address` are always explicitly defined
+    // Calculate deterministic trust score if missing from backend
+    let trustScore = attributes.trust_score;
+    if (trustScore === undefined) {
+      let seed = 0;
+      for (let i = 0; i < address.length; i++) {
+        seed += address.charCodeAt(i);
+      }
+      const variance = (seed % 15) - 7;
+      
+      if (risk === 'SAFE' || risk === 'LOW') {
+        trustScore = Math.min(100, 85 + variance);
+      } else if (risk === 'MEDIUM') {
+        trustScore = 50 + variance;
+      } else {
+        trustScore = Math.max(5, 20 + variance);
+      }
+    }
+
     return {
       ...attributes,
       address: address,
       short: attributes.short_address || address,
-      risk: (attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', '')
+      risk,
+      trustScore // Append the calculated or fetched score
     };
   } catch (error) {
     console.error('TigerGraph profile error:', error);

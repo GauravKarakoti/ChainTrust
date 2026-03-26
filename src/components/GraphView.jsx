@@ -91,6 +91,27 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
     }
   }, [selectedNode])
 
+  useEffect(() => {
+    const cy = cyRef.current
+    if (!cy) return
+
+    cy.batch(() => {
+      if (filter === 'ALL') {
+        // Show all nodes
+        cy.nodes().style('display', 'element')
+      } else {
+        // Show only nodes matching the risk filter, hide others
+        cy.nodes().forEach(node => {
+          if (node.data('risk') === filter) {
+            node.style('display', 'element')
+          } else {
+            node.style('display', 'none')
+          }
+        })
+      }
+    })
+  }, [filter, elements])
+
   const handleZoomIn = () => cyRef.current?.zoom(cyRef.current.zoom() * 1.3)
   const handleZoomOut = () => cyRef.current?.zoom(cyRef.current.zoom() * 0.75)
   const handleFit = () => cyRef.current?.fit(undefined, 30)
