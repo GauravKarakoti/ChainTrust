@@ -10,13 +10,6 @@ import TigerGraphWorkspace from './components/TigerGraphWorkspace'
 
 const FILTER_OPTIONS = ['ALL', 'CRITICAL', 'HIGH', 'SAFE']
 
-const STATS = [
-  { label: 'Wallets Analyzed', value: '2.4M', change: '+12k today', up: true },
-  { label: 'Scam Clusters', value: '8,431', change: '+23 today', up: false },
-  { label: 'Flagged Txs', value: '142K', change: '+891 today', up: false },
-  { label: 'Avg Response', value: '120ms', change: 'TigerGraph', up: true },
-]
-
 export default function App() {
   const [selectedNode, setSelectedNode] = useState(null)
   const [isLoading, setIsLoading] = useState(true) // Start loading on mount
@@ -136,22 +129,9 @@ export default function App() {
         <SearchBar onSearch={handleSearch} isLoading={isLoading} />
       </div>
 
-      {/* Stats Bar */}
       <div className="flex-shrink-0 border-b border-[#1e2847] bg-dark-800/40">
         <div className="max-w-[1600px] mx-auto px-4 py-2.5 flex items-center gap-1 overflow-x-auto">
-          {STATS.map(({ label, value, change, up }) => (
-            <div key={label} className="flex items-center gap-3 px-4 py-1 flex-shrink-0 border-r border-[#1e2847] last:border-0">
-              <div>
-                <p className="text-[10px] text-slate-600 uppercase tracking-widest whitespace-nowrap">{label}</p>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-bold mono text-slate-200">{value}</span>
-                  <span className={`text-[10px] ${up ? 'text-emerald-500' : 'text-red-500'}`}>{change}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          <div className="ml-auto flex items-center gap-3 px-4 flex-shrink-0">
+          <div className="flex items-center gap-3 px-4 flex-shrink-0">
             <div className="text-right">
               <p className="text-[10px] text-slate-600 uppercase tracking-widest">Analyzing</p>
               <p className="text-xs mono font-semibold text-slate-300 truncate max-w-[140px]">{searchedAddress}</p>
