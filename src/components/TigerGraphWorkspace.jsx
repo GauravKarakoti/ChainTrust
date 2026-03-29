@@ -2,18 +2,25 @@ import { useState, useEffect } from 'react';
 import '../index.css';
 
 const TigerGraphWorkspace = () => {
-  // Possible states: 'checking', 'running', 'stopped', 'resuming'
-  const [workspaceStatus, setWorkspaceStatus] = useState('checking'); 
+  // Possible states: 'Active', 'Pausing', 'Idle', 'Resuming', 'Checking'
+  const [workspaceStatus, setWorkspaceStatus] = useState('Checking'); 
 
   // 1. Check the initial status of the workspace
   const checkStatus = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_TG_URL}/api/tg/status`);
+      const response = await fetch(`https://api.tgcloud.io/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}`, {
+        method: 'GET',
+        headers: {
+          'x-api-key': import.meta.env.VITE_API_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
       const data = await response.json();
-      setWorkspaceStatus(data.status); 
+      console.log("Workspace status response:", data);
+      setWorkspaceStatus(data.Result.status); 
     } catch (error) {
       console.error("Failed to fetch status:", error);
-      setWorkspaceStatus('stopped'); // Fallback state
+      setWorkspaceStatus('Checking'); // Fallback state
     }
   };
 
@@ -23,35 +30,44 @@ const TigerGraphWorkspace = () => {
 
   // 2. Handle the resume action and poll for readiness
   const handleResume = async () => {
-    setWorkspaceStatus('resuming');
+    setWorkspaceStatus('Resuming');
     try {
       // Trigger the start command via your backend
-      await fetch(`${import.meta.env.VITE_TG_URL}/api/tg/resume`, { method: 'POST' });
+      await fetch(`https://api.tgcloud.io/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}/resume`, { method: 'POST', headers: {
+          'x-api-key': import.meta.env.VITE_API_KEY,
+          'Content-Type': 'application/json'
+        } });
       
       // Poll every 10 seconds until the workspace is fully running
       const pollInterval = setInterval(async () => {
-        const response = await fetch(`${import.meta.env.VITE_TG_URL}/api/tg/status`);
+        const response = await fetch(`https://api.tgcloud.io/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}`, {
+          method: 'GET',
+          headers: {
+            'x-api-key': import.meta.env.VITE_API_KEY,
+            'Content-Type': 'application/json'
+          }
+        });
         const data = await response.json();
         
-        if (data.status === 'running') {
-          setWorkspaceStatus('running');
+        if (data.Result.status === 'Active') {
+          setWorkspaceStatus('Active');
           clearInterval(pollInterval);
         }
       }, 10000);
       
     } catch (error) {
       console.error("Failed to resume workspace:", error);
-      setWorkspaceStatus('stopped');
+      setWorkspaceStatus('Idle');
     }
   };
 
   // UI State A: Loading
-  if (workspaceStatus === 'checking') {
+  if (workspaceStatus === 'Checking') {
     return <div className="status-panel loading">Checking TigerGraph workspace status...</div>;
   }
 
   // UI State B: Running (The Connected Section)
-  if (workspaceStatus === 'running') {
+  if (workspaceStatus === 'Active') {
     return (
       <div className="connected-panel">
         <h3>✅ Current TigerGraph Connected Section</h3>
@@ -66,10 +82,10 @@ const TigerGraphWorkspace = () => {
     <div className="offline-panel">
       <button 
         onClick={handleResume} 
-        disabled={workspaceStatus === 'resuming'}
+        disabled={workspaceStatus === 'Resuming'}
         className="resume-btn"
       >
-        {workspaceStatus === 'resuming' ? 'Resuming Workspace (Please wait)...' : 'Resume TigerGraph Workspace'}
+        {workspaceStatus === 'Resuming' ? 'Resuming Workspace (Please wait)...' : 'Resume TigerGraph Workspace'}
       </button>
     </div>
   );
