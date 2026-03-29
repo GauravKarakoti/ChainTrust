@@ -39,11 +39,8 @@ const TigerGraphWorkspace = () => {
         method: 'POST', 
         headers: {
           'x-api-key': import.meta.env.VITE_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
+        }
       });
-      console.log("Restarted")
       
       // Poll every 10 seconds until the workspace is fully running
       const pollInterval = setInterval(async () => {
@@ -57,7 +54,6 @@ const TigerGraphWorkspace = () => {
           });
           const data = await response.json();
           const currentStatus = data.Result?.status;
-          console.log("Polling workspace status:", currentStatus);
           
           if (currentStatus === 'Active') {
             setWorkspaceStatus('Active');
@@ -68,7 +64,6 @@ const TigerGraphWorkspace = () => {
             if (currentStatus === 'Stopped' || currentStatus === 'Stopping') {
               clearInterval(pollInterval);
             }
-            console.log("Workspace is not active yet, current status:", currentStatus);
           }
         } catch (err) {
           console.error("Polling check failed", err);

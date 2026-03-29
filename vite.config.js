@@ -17,7 +17,13 @@ export default defineConfig(({ mode }) => {
           target: 'https://api.tgcloud.io',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/tgcloud/, '')
+          rewrite: (path) => path.replace(/^\/tgcloud/, ''),
+          configure: (proxy, _options) => {
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              proxyReq.removeHeader('Origin');
+              proxyReq.removeHeader('Referer');
+            });
+          }
         }
       }
     }
