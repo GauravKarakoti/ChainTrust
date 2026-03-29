@@ -12,6 +12,12 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_TG_URL,
           changeOrigin: true,
           secure: false,
+        },
+        '/tgcloud': {
+          target: 'https://api.tgcloud.io',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/tgcloud/, '')
         }
       }
     }

@@ -8,7 +8,7 @@ const TigerGraphWorkspace = () => {
   // 1. Check the initial status of the workspace
   const checkStatus = async () => {
     try {
-      const response = await fetch(`https://api.tgcloud.io/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}`, {
+      const response = await fetch(`/tgcloud/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}`, {
         method: 'GET',
         headers: {
           'x-api-key': import.meta.env.VITE_API_KEY,
@@ -33,14 +33,14 @@ const TigerGraphWorkspace = () => {
     setWorkspaceStatus('Resuming');
     try {
       // Trigger the start command via your backend
-      await fetch(`https://api.tgcloud.io/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}/resume`, { method: 'POST', headers: {
+      await fetch(`/tgcloud/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}/resume`, { method: 'POST', headers: {
           'x-api-key': import.meta.env.VITE_API_KEY,
           'Content-Type': 'application/json'
         } });
       
       // Poll every 10 seconds until the workspace is fully running
       const pollInterval = setInterval(async () => {
-        const response = await fetch(`https://api.tgcloud.io/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}`, {
+        const response = await fetch(`/tgcloud/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}`, {
           method: 'GET',
           headers: {
             'x-api-key': import.meta.env.VITE_API_KEY,
@@ -70,9 +70,7 @@ const TigerGraphWorkspace = () => {
   if (workspaceStatus === 'Active') {
     return (
       <div className="connected-panel">
-        <h3>✅ Current TigerGraph Connected Section</h3>
-        <p>Your workspace is active and ready for queries.</p>
-        {/* Render your active graph tools, metrics, or schema here */}
+        <p>Workspace is Active and Ready for Queries.</p>
       </div>
     );
   }

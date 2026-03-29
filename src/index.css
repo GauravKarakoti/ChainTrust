@@ -160,14 +160,12 @@ body {
 .status-panel.loading {
   padding: 1rem;
   font-style: italic;
-  color: #666;
+  color: #ff0000;
 }
 
 /* State B: Running (Connected Section) */
 .connected-panel {
-  border: 1px solid green;
   padding: 1rem;
-  border-radius: 4px; 
 }
 
 .connected-panel h3 {
