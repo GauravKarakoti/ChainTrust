@@ -234,11 +234,34 @@ export async function fetchAIExplanations(address) {
     // 2. Updated Prompt: Includes the word "json" to satisfy the API requirement
     // and specifies a structured array format for the UI.
     const prompt = `You are a cybersecurity blockchain analyst. Analyze this wallet: ${address}.
-    Metrics: Risk ${baseRisk}, Total Txs ${totalTxs}, Flagged Txs ${flaggedTxs}, Exposure ${riskRatio}%.
-    Always give an answer that backs up the Risk with confidence.
-    Provide a 3-sentence risk assessment. Format your response as a JSON object containing an array of strings named "explanations". 
-    Each string should be one sentence. Use **markdown bolding** for key numbers.
-    Example: { "explanations": ["line 1", "line 2", "line 3"] }`;
+
+    Metrics:
+    - Risk Score: ${baseRisk}
+    - Total Transactions (recent window): ${totalTxs}
+    - Flagged Transactions: ${flaggedTxs}
+    - Exposure Ratio: ${riskRatio}%
+
+    Important context:
+    - Blockchain explorers like Etherscan may only return recent transactions.
+    - A value of 0 transactions does NOT necessarily mean the wallet is new or inactive.
+    - Historical malicious activity may not appear in recent transaction counts.
+
+    Instructions:
+    - Base your reasoning primarily on flagged transactions and exposure ratio.
+    - Do NOT assume "0 transactions" implies high risk or new wallet.
+    - Ensure the explanation logically aligns with the given risk score.
+
+    Output:
+    Provide exactly 3 sentences explaining the risk.
+
+    Format:
+    {
+      "explanations": [
+        "sentence 1",
+        "sentence 2",
+        "sentence 3"
+      ]
+    }`;
 
     const completion = await groq.chat.completions.create({
       messages: [
