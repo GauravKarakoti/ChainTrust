@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/tgcloud/:path*",
-      "destination": "https://api.tgcloud.io/:path*"
-    },
-    {
       "source": "/restpp/:path*",
       "destination": "https://tg-70226cc2-f773-4ef5-8a1c-165418ab6779.tg-2635877100.i.tgcloud.io/restpp/:path*"
     },
