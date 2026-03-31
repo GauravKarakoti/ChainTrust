@@ -42,7 +42,7 @@ const TigerGraphWorkspace = () => {
         }
       });
       
-      // Poll every 10 seconds until the workspace is fully running
+      // Poll every 3 seconds until the workspace is fully running
       const pollInterval = setInterval(async () => {
         try {
           const response = await fetch(`/tgcloud/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}`, {
@@ -68,7 +68,7 @@ const TigerGraphWorkspace = () => {
         } catch (err) {
           console.error("Polling check failed", err);
         }
-      }, 10000);
+      }, 3000);
       
     } catch (error) {
       console.error("Failed to resume workspace:", error);
