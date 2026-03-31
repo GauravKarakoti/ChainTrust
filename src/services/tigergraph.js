@@ -235,7 +235,7 @@ export async function fetchAIExplanations(address) {
     // and specifies a structured array format for the UI.
     const prompt = `You are a cybersecurity blockchain analyst. Analyze this wallet: ${address}.
     Metrics: Risk ${baseRisk}, Total Txs ${totalTxs}, Flagged Txs ${flaggedTxs}, Exposure ${riskRatio}%.
-    
+    Always give an answer that backs up the Risk with confidence.
     Provide a 3-sentence risk assessment. Format your response as a JSON object containing an array of strings named "explanations". 
     Each string should be one sentence. Use **markdown bolding** for key numbers.
     Example: { "explanations": ["line 1", "line 2", "line 3"] }`;
