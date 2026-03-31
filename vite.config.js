@@ -23,6 +23,18 @@ export default defineConfig(({ mode }) => {
               proxyReq.removeHeader('Origin');
               proxyReq.removeHeader('Referer');
             });
+          },
+          '/etherscan': {
+            target: 'https://api.etherscan.io',
+            changeOrigin: true,
+            secure: false,
+            rewrite: (path) => path.replace(/^\/etherscan/, ''),
+            configure: (proxy, _options) => {
+              proxy.on('proxyReq', (proxyReq, req, _res) => {
+                proxyReq.removeHeader('Origin');
+                proxyReq.removeHeader('Referer');
+              });
+            }
           }
         }
       }

@@ -1,20 +1,26 @@
 export const config = {
-  // This ensures the middleware only runs for /tgcloud/ requests
-  matcher: '/tgcloud/:path*',
+  // Match both tgcloud and our new etherscan route
+  matcher: ['/tgcloud/:path*', '/etherscan/:path*'],
 };
 
 export default async function middleware(req) {
   const url = new URL(req.url);
   
-  // 1. Rewrite the URL (equivalent to your Vite path.replace)
-  const targetPath = url.pathname.replace(/^\/tgcloud/, '') + url.search;
-  const targetUrl = `https://api.tgcloud.io${targetPath}`;
+  let targetUrl;
 
-  // 2. Clone headers and remove Origin & Referer
+  // 1. Route to the correct destination based on the path
+  if (url.pathname.startsWith('/tgcloud')) {
+    const targetPath = url.pathname.replace(/^\/tgcloud/, '') + url.search;
+    targetUrl = `https://api.tgcloud.io${targetPath}`;
+  } else if (url.pathname.startsWith('/etherscan')) {
+    const targetPath = url.pathname.replace(/^\/etherscan/, '') + url.search;
+    targetUrl = `https://api.etherscan.io${targetPath}`;
+  }
+
+  // 2. Clone headers and remove Origin, Referer, and Host to bypass firewalls
   const headers = new Headers(req.headers);
   headers.delete('origin');
   headers.delete('referer');
-  // Vercel sometimes passes a host header that conflicts with the target
   headers.delete('host'); 
 
   // 3. Proxy the request using fetch to the new target

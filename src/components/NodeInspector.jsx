@@ -48,12 +48,11 @@ export default function NodeInspector({ wallet, onClose }) {
         const apiKey = import.meta.env.VITE_ETHERSCAN_API_KEY;
         const address = wallet.address;
 
-        // 1. Fetch Real Balance
-        const balanceRes = await fetch(`https://api.etherscan.io/v2/api?chainid=1&module=account&action=balance&address=${address}&tag=latest&apikey=${apiKey}`);
+        const balanceRes = await fetch(`/etherscan/v2/api?chainid=1&module=account&action=balance&address=${address}&tag=latest&apikey=${apiKey}`);
         const balanceData = await balanceRes.json();
-        
-        // 2. Fetch Real Tx Count (Using proxy module)
-        const txCountRes = await fetch(`https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_getTransactionCount&address=${address}&tag=latest&apikey=${apiKey}`);
+
+        // Fetch Real Tx Count (Route through our /etherscan proxy)
+        const txCountRes = await fetch(`/etherscan/v2/api?chainid=1&module=proxy&action=eth_getTransactionCount&address=${address}&tag=latest&apikey=${apiKey}`);
         const txCountData = await txCountRes.json();
 
         if (isMounted) {
