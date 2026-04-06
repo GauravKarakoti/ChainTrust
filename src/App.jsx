@@ -104,7 +104,7 @@ export default function App() {
             <img 
               src="/logo.png" 
               alt="ChainTrust Logo" 
-              className="w-6 h-6 md:w-10 md:h-10 object-contain" 
+              className="w-10 md:h-10 object-contain" 
             />
             <span className="text-sm md:text-base font-bold gradient-text">ChainTrust</span>
           </div>
