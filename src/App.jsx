@@ -97,56 +97,57 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-dark-900 flex flex-col">
-      {/* Top Nav: Optimized height and spacing for mobile */}
+      {/* Header: Prevent overflow on mobile */}
       <header className="flex-shrink-0 border-b border-[#1e2847] bg-dark-800/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto px-4 h-16 md:h-24 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">
+        <div className="max-w-[1600px] mx-auto px-4 h-16 md:h-24 flex items-center justify-between gap-2 md:gap-4">
+          {/* Logo: Smaller text/gap on mobile */}
+          <div className="flex items-center gap-1.5 md:gap-2.5 flex-shrink-0">
+            <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-xs md:text-sm font-bold text-white">
               ⛓
             </div>
-            <span className="text-base font-bold gradient-text">ChainTrust</span>
+            <span className="text-sm md:text-base font-bold gradient-text">ChainTrust</span>
           </div>
 
+          {/* Desktop Search */}
           <div className="flex-1 max-w-2xl mx-auto hidden md:block">
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
           </div>
 
-          {/* Desktop-only status indicators */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
-              <TigerGraphWorkspace />
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-blue-400">
+          {/* Status Indicators: Visible and compact on mobile */}
+          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+            <TigerGraphWorkspace />
+            <div className="hidden sm:flex items-center gap-1.5 text-[10px] md:text-[11px] text-blue-400">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              Ethereum
+              ETH
             </div>
           </div>
         </div>
       </header>
 
-      {/* Mobile Search Bar: Visible only on small screens */}
+      {/* Mobile Search Bar */}
       <div className="md:hidden p-3 border-b border-[#1e2847] bg-dark-800">
         <SearchBar onSearch={handleSearch} isLoading={isLoading} />
       </div>
 
-      {/* Sub-header: Dynamic Wallet Info */}
+      {/* Sub-header */}
       <div className="flex-shrink-0 border-b border-[#1e2847] bg-dark-800/40">
-        <div className="max-w-[1600px] mx-auto px-4 py-2.5 flex items-center justify-between gap-2 overflow-x-hidden">
+        <div className="max-w-[1600px] mx-auto px-4 py-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
             <div className="text-left min-w-0">
-              <p className="text-[10px] text-slate-600 uppercase tracking-widest">Analyzing</p>
-              <p className="text-xs mono font-semibold text-slate-300 truncate max-w-[200px]">{searchedAddress || 'None'}</p>
+              <p className="text-[9px] text-slate-600 uppercase tracking-widest">Analyzing</p>
+              <p className="text-[11px] md:text-xs mono font-semibold text-slate-300 truncate max-w-[150px] md:max-w-[200px]">
+                {searchedAddress || 'None'}
+              </p>
             </div>
           </div>
-          <TrustScoreRing score={targetProfile.trustScore || 0} risk={targetProfile.risk || 'UNKNOWN'} size={40} />
+          <TrustScoreRing score={targetProfile.trustScore || 0} risk={targetProfile.risk || 'UNKNOWN'} size={44} />
         </div>
       </div>
 
-      {/* Main layout: Flex-col on mobile, Flex-row on desktop */}
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-4 flex flex-col md:flex-row gap-4 min-h-0">
         
-        {/* Left Side: Graph Area */}
-        <div className="flex-1 flex flex-col gap-4 min-w-0 min-h-[400px] md:min-h-0">
+        {/* Left Side: Graph Area - FIXED HEIGHT ON MOBILE */}
+        <div className="flex-1 flex flex-col gap-4 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-[11px] text-slate-600 uppercase tracking-widest">Filter:</span>
             <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
@@ -154,7 +155,7 @@ export default function App() {
                 <button
                   key={f}
                   onClick={() => setGraphFilter(f === graphFilter ? 'ALL' : f)}
-                  className={`text-[10px] md:text-[11px] px-3 py-1 rounded-lg border transition-all whitespace-nowrap ${
+                  className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap ${
                     graphFilter === f
                       ? 'bg-blue-900/50 border-blue-700 text-blue-300'
                       : 'bg-dark-800 border-[#1e2847] text-slate-500'
@@ -166,7 +167,8 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 relative">
+          {/* Graph Container: Fixed height h-[450px] on mobile is critical for rendering */}
+          <div className="h-[450px] md:h-full md:flex-1 relative">
             {isLoading ? (
               <div className="w-full h-full bg-dark-800 rounded-xl border border-[#1e2847] flex flex-col items-center justify-center gap-4">
                 <div className="relative">
@@ -198,8 +200,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Side: Tabbed Inspector/Analysis */}
-        <div className="w-full md:w-80 flex-shrink-0 flex flex-col gap-4 min-h-0">
+        {/* Right Side: Tabbed Inspector */}
+        <div className="w-full md:w-80 flex-shrink-0 flex flex-col gap-4">
           <div className="flex gap-1 bg-dark-800 border border-[#1e2847] rounded-xl p-1 flex-shrink-0">
             {[
               { id: 'inspector', label: '🔍 Inspector' },

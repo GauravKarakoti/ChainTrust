@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
-import '../index.css';
 
 const TigerGraphWorkspace = () => {
-  // Possible states: 'Active', 'Stopping', 'Stopped', 'Resuming', 'Checking'
   const [workspaceStatus, setWorkspaceStatus] = useState('Checking'); 
 
-  // 1. Check the initial status of the workspace
   const checkStatus = async () => {
     try {
       const response = await fetch(`/tgcloud/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}`, {
@@ -16,13 +13,9 @@ const TigerGraphWorkspace = () => {
         }
       });
       const data = await response.json();
-      console.log("Workspace status response:", data);
-      
-      // Update state based on API response
       setWorkspaceStatus(data.Result?.status || 'Stopped'); 
     } catch (error) {
-      console.error("Failed to fetch status:", error);
-      setWorkspaceStatus('Stopped'); // Fallback to Stopped so the user has the option to click Resume
+      setWorkspaceStatus('Stopped');
     }
   };
 
@@ -30,19 +23,15 @@ const TigerGraphWorkspace = () => {
     checkStatus();
   }, []);
 
-  // 2. Handle the resume action and poll for readiness
-  const handleResume = async () => {
+  const handleResume = async (e) => {
+    e.stopPropagation(); // Prevent event bubbling
     setWorkspaceStatus('Resuming');
     try {
-      // Trigger the start command via your backend
       await fetch(`/tgcloud/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}/resume`, { 
         method: 'POST', 
-        headers: {
-          'x-api-key': import.meta.env.VITE_API_KEY,
-        }
+        headers: { 'x-api-key': import.meta.env.VITE_API_KEY }
       });
       
-      // Poll every 3 seconds until the workspace is fully running
       const pollInterval = setInterval(async () => {
         try {
           const response = await fetch(`/tgcloud/controller/v4/v2/workgroups/${import.meta.env.VITE_WORKGROUP_ID}/workspaces/${import.meta.env.VITE_WORKSPACE_ID}`, {
@@ -58,74 +47,48 @@ const TigerGraphWorkspace = () => {
           if (currentStatus === 'Active') {
             setWorkspaceStatus('Active');
             clearInterval(pollInterval);
-          } else if (currentStatus) {
-            // Keep UI updated if it falls back to Stopped or Stopping
+          } else if (currentStatus === 'Stopped' || currentStatus === 'Stopping') {
             setWorkspaceStatus(currentStatus);
-            if (currentStatus === 'Stopped' || currentStatus === 'Stopping') {
-              clearInterval(pollInterval);
-            }
+            clearInterval(pollInterval);
           }
         } catch (err) {
-          console.error("Polling check failed", err);
+          console.error("Polling failed", err);
         }
       }, 3000);
-      
     } catch (error) {
-      console.error("Failed to resume workspace:", error);
       setWorkspaceStatus('Stopped');
     }
   };
 
-  // 3. Render UI based on the exact 5 states
-  const renderStatusUI = () => {
+  // Compact UI for Header
+  const getStatusConfig = () => {
     switch (workspaceStatus) {
-      case 'Checking':
-        return (
-          <div className="status-panel loading">
-            <p>🔄 Checking TigerGraph workspace status...</p>
-          </div>
-        );
-
-      case 'Active':
-        return (
-          <div className="connected-panel">
-            <p>✅ Workspace is Active and Ready for Queries.</p>
-          </div>
-        );
-
-      case 'Stopping':
-        return (
-          <div className="offline-panel">
-            <button disabled className="resume-btn pausing-btn">
-              ⏸️ Workspace is Stopping (Please wait)...
-            </button>
-          </div>
-        );
-
-      case 'Resuming':
-        return (
-          <div className="offline-panel">
-            <button disabled className="resume-btn resuming-btn">
-              ⏳ Resuming Workspace (Please wait)...
-            </button>
-          </div>
-        );
-
-      case 'Stopped':
-      default:
-        return (
-          <div className="offline-panel">
-            <button onClick={handleResume} className="resume-btn">
-              ▶️ Resume TigerGraph Workspace
-            </button>
-          </div>
-        );
+      case 'Active': return { color: 'bg-emerald-500', label: 'TG Active', action: null };
+      case 'Resuming': return { color: 'bg-amber-500 animate-pulse', label: 'Starting...', action: null };
+      case 'Stopping': return { color: 'bg-red-400', label: 'Stopping', action: null };
+      case 'Checking': return { color: 'bg-slate-500 animate-pulse', label: 'Checking...', action: null };
+      default: return { color: 'bg-slate-600', label: 'TG Offline', action: handleResume };
     }
   };
 
+  const config = getStatusConfig();
+
   return (
-    <div className="tigergraph-workspace-container">
-      {renderStatusUI()}
+    <div className="flex items-center">
+      {config.action ? (
+        <button 
+          onClick={config.action}
+          className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-900/30 border border-blue-700/50 hover:bg-blue-800/40 transition-colors"
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${config.color}`} />
+          <span className="text-[10px] font-bold text-blue-400 uppercase tracking-tighter">Resume TG</span>
+        </button>
+      ) : (
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-dark-700/50 border border-[#1e2847]">
+          <span className={`w-1.5 h-1.5 rounded-full ${config.color}`} />
+          <span className="text-[10px] font-medium text-slate-400 uppercase tracking-tighter">{config.label}</span>
+        </div>
+      )}
     </div>
   );
 };
