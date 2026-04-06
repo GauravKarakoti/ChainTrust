@@ -33,6 +33,11 @@ body {
   background: #3b82f6;
 }
 
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .mono {
   font-family: 'JetBrains Mono', monospace;
 }

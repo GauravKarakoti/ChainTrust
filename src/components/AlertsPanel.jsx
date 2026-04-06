@@ -54,27 +54,20 @@ export default function AlertsPanel({ isExpanded, onToggleExpand }) {
 
   return (
     <div className="bg-dark-800 border border-[#1e2847] rounded-xl flex flex-col overflow-hidden">
-      {/* Header (Always Visible) */}
       <div className="p-4 border-b border-[#1e2847] flex-shrink-0 bg-dark-800 relative z-10">
         <div className="flex items-center gap-2 mb-3">
           <div className={`w-2 h-2 rounded-full ${newAlertPulse ? 'bg-red-500 animate-ping' : 'bg-red-600'}`} />
-          <h3 className="text-sm font-semibold text-slate-300">Real-time Alerts</h3>
-          <span className="text-[10px] mono bg-dark-700 border border-[#1e2847] px-2 py-0.5 rounded text-slate-400">
-            LIVE
-          </span>
-          
-          <div className="ml-auto">
-            <button 
-              onClick={onToggleExpand}
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-slate-200 transition-colors bg-dark-700 hover:bg-dark-600 px-2.5 py-1 rounded border border-[#1e2847]"
-            >
-              {isExpanded ? '▼ Collapse' : '▲ Expand'}
-            </button>
-          </div>
+          <h3 className="text-sm font-semibold text-slate-300">Live Alerts</h3>
+          <button 
+            onClick={onToggleExpand}
+            className="ml-auto text-[11px] font-semibold text-slate-400 bg-dark-700 px-2.5 py-1 rounded border border-[#1e2847]"
+          >
+            {isExpanded ? 'Collapse' : 'Expand'}
+          </button>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Responsive Grid: 3 columns on desktop, 1 or 2 on mobile */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
             { label: 'CRITICAL', count: counts.CRITICAL, color: 'text-red-400', bg: 'bg-red-950/30' },
             { label: 'HIGH', count: counts.HIGH, color: 'text-orange-400', bg: 'bg-orange-950/30' },
@@ -85,10 +78,10 @@ export default function AlertsPanel({ isExpanded, onToggleExpand }) {
               onClick={() => setFilter(filter === label ? 'ALL' : label)}
               className={`rounded-lg p-2 text-center transition-all border ${
                 filter === label ? 'border-current' : 'border-transparent'
-              } ${bg}`}
+              } ${bg} ${label === 'MEDIUM' ? 'col-span-2 sm:col-span-1' : ''}`} // Medium spans 2 on mobile
             >
-              <p className={`text-lg font-bold mono ${color}`}>{count}</p>
-              <p className="text-[9px] text-slate-500 uppercase tracking-widest">{label}</p>
+              <p className={`text-base md:text-lg font-bold mono ${color}`}>{count}</p>
+              <p className="text-[8px] md:text-[9px] text-slate-500 uppercase tracking-widest">{label}</p>
             </button>
           ))}
         </div>
