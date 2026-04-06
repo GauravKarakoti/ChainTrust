@@ -100,11 +100,12 @@ export default function App() {
       {/* Header: Prevent overflow on mobile */}
       <header className="flex-shrink-0 border-b border-[#1e2847] bg-dark-800/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto px-4 h-16 md:h-24 flex items-center justify-between gap-2 md:gap-4">
-          {/* Logo: Smaller text/gap on mobile */}
           <div className="flex items-center gap-1.5 md:gap-2.5 flex-shrink-0">
-            <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-xs md:text-sm font-bold text-white">
-              ⛓
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="ChainTrust Logo" 
+              className="w-6 h-6 md:w-10 md:h-10 object-contain" 
+            />
             <span className="text-sm md:text-base font-bold gradient-text">ChainTrust</span>
           </div>
 
