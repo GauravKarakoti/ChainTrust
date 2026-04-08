@@ -57,7 +57,6 @@ export async function fetchWalletGraph(address) {
   }
 }
 
-// 1. NEW: Added riskMap parameter to populate risk_level during upsert
 export async function upsertGraphData(transactions, riskMap = {}) {
   const payload = {
     vertices: { "Wallet": {} },
@@ -65,17 +64,30 @@ export async function upsertGraphData(transactions, riskMap = {}) {
   };
 
   transactions.forEach(tx => {
-    payload.vertices.Wallet[tx.from] = { 
-        "address": { "value": tx.from }, 
-        "short_address": { "value": tx.from.substring(0,6) },
-        "risk_level": { "value": riskMap[tx.from] || 'UNKNOWN' } 
-    };
-    payload.vertices.Wallet[tx.to] = { 
-        "address": { "value": tx.to }, 
-        "short_address": { "value": tx.to.substring(0,6) },
-        "risk_level": { "value": riskMap[tx.to] || 'UNKNOWN' }
-    };
+    // 1. Base vertex setup (Address and Short Address)
+    if (!payload.vertices.Wallet[tx.from]) {
+        payload.vertices.Wallet[tx.from] = { 
+            "address": { "value": tx.from }, 
+            "short_address": { "value": tx.from.substring(0,6) }
+        };
+    }
+    if (!payload.vertices.Wallet[tx.to]) {
+        payload.vertices.Wallet[tx.to] = { 
+            "address": { "value": tx.to }, 
+            "short_address": { "value": tx.to.substring(0,6) }
+        };
+    }
 
+    // 2. CRITICAL FIX: Only attach risk_level if it explicitly exists in riskMap.
+    // This prevents overwriting existing CRITICAL nodes with UNKNOWN.
+    if (riskMap[tx.from]) {
+        payload.vertices.Wallet[tx.from].risk_level = { "value": riskMap[tx.from] };
+    }
+    if (riskMap[tx.to]) {
+        payload.vertices.Wallet[tx.to].risk_level = { "value": riskMap[tx.to] };
+    }
+
+    // 3. Edge setup
     if (!payload.edges.Wallet[tx.from]) {
         payload.edges.Wallet[tx.from] = { "TRANSACTION": { "Wallet": {} } };
     }
@@ -120,19 +132,22 @@ export async function syncWalletTransactions(address) {
       value: (Number(tx.value) / 1e18).toFixed(4) 
     }));
 
-    // 2. NEW: Call GoPlus Security API to get risk level for the target wallet
     const riskMap = {};
     try {
       const riskRes = await fetch(`https://api.gopluslabs.io/api/v1/address_security/${address}?chain_id=1`);
       const riskData = await riskRes.json();
       
-      let targetRisk = 'SAFE'; // Changed from 'Safe'
       if (riskData.result && riskData.result[address.toLowerCase()]) {
         const securityFlags = riskData.result[address.toLowerCase()];
         const isMalicious = Object.values(securityFlags).some(val => val === "1");
-        if (isMalicious) targetRisk = 'CRITICAL'; // Changed from 'Critical Risk'
+        
+        // CRITICAL FIX: Only set the risk if GoPlus explicitly flags it as malicious.
+        // If it's clean, DO NOT set it to 'SAFE'. Doing so overwrites TigerGraph's 
+        // internal graph intelligence and erases the exposure risk.
+        if (isMalicious) {
+           riskMap[address.toLowerCase()] = 'CRITICAL';
+        }
       }
-      riskMap[address.toLowerCase()] = targetRisk;
     } catch (apiError) {
       console.warn("GoPlus Risk API failed, falling back to GSQL logic:", apiError);
     }
