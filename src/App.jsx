@@ -132,7 +132,7 @@ export default function App() {
 
       {/* Sub-header */}
       <div className="flex-shrink-0 border-b border-[#1e2847] bg-dark-800/40">
-        <div className="max-w-[1600px] mx-auto px-4 py-2 flex items-center justify-between gap-2">
+        <div className="max-w-[1600px] mx-auto px-4 py-2 flex items-center gap-2">
           <div className="flex items-center gap-3 min-w-0">
             <div className="text-left min-w-0">
               <p className="text-[9px] text-slate-600 uppercase tracking-widest">Analyzing</p>
