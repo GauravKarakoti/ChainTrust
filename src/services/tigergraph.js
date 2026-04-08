@@ -114,6 +114,7 @@ export async function upsertGraphData(transactions, riskMap = {}) {
 
 export async function syncWalletTransactions(address) {
   if (!address) return;
+  const lowerAddress = address.toLowerCase();
 
   try {
     const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=50&sort=desc&apikey=${ETHERSCAN_KEY}`;
@@ -132,22 +133,33 @@ export async function syncWalletTransactions(address) {
       value: (Number(tx.value) / 1e18).toFixed(4) 
     }));
 
+    // 1. Fetch current profile from TigerGraph
+    const existingProfile = await fetchWalletProfile(lowerAddress);
+
     const riskMap = {};
     try {
-      const riskRes = await fetch(`https://api.gopluslabs.io/api/v1/address_security/${address}?chain_id=1`);
+      const riskRes = await fetch(`https://api.gopluslabs.io/api/v1/address_security/${lowerAddress}?chain_id=1`);
       const riskData = await riskRes.json();
       
-      if (riskData.result && riskData.result[address.toLowerCase()]) {
-        const securityFlags = riskData.result[address.toLowerCase()];
-        const isMalicious = Object.values(securityFlags).some(val => val === "1");
-        
-        // CRITICAL FIX: Only set the risk if GoPlus explicitly flags it as malicious.
-        // If it's clean, DO NOT set it to 'SAFE'. Doing so overwrites TigerGraph's 
-        // internal graph intelligence and erases the exposure risk.
-        if (isMalicious) {
-           riskMap[address.toLowerCase()] = 'CRITICAL';
+      let isMalicious = false;
+      
+      // Only check flags if the address actually exists in the GoPlus response
+      if (riskData.result && riskData.result[lowerAddress]) {
+        const securityFlags = riskData.result[lowerAddress];
+        isMalicious = Object.values(securityFlags).some(val => String(val) === "1");
+      }
+      
+      // 2. Safely apply the risk levels
+      if (isMalicious) {
+        riskMap[lowerAddress] = 'CRITICAL';
+      } else {
+        // If GoPlus doesn't flag it, check if it's a new or UNKNOWN node
+        const currentRisk = existingProfile?.risk || 'UNKNOWN';
+        if (currentRisk === 'UNKNOWN') {
+           riskMap[lowerAddress] = 'SAFE';
         }
       }
+      
     } catch (apiError) {
       console.warn("GoPlus Risk API failed, falling back to GSQL logic:", apiError);
     }
