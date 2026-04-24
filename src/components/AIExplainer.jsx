@@ -78,7 +78,7 @@ export default function AIExplainer({ wallet }) {
         <div className="flex items-center gap-2 mb-4">
           <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
           <h3 className="text-sm font-semibold text-slate-300">AI Risk Analysis</h3>
-          <span className="ml-auto text-[10px] bg-purple-950 text-purple-400 border border-purple-800 px-2 py-0.5 rounded-full">GPT-4o</span>
+          <span className="ml-auto text-[10px] bg-purple-950 text-purple-400 border border-purple-800 px-2 py-0.5 rounded-full">Groq</span>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <p className="text-slate-600 text-sm text-center">Select a wallet to generate AI risk explanation</p>
@@ -93,7 +93,7 @@ export default function AIExplainer({ wallet }) {
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <div className={`w-2 h-2 rounded-full ${isTyping ? 'animate-pulse bg-purple-500' : 'bg-purple-600'}`} />
         <h3 className="text-sm font-semibold text-slate-300">AI Risk Analysis</h3>
-        <span className="ml-auto text-[10px] bg-purple-950 text-purple-400 border border-purple-800 px-2 py-0.5 rounded-full">GPT-4o</span>
+        <span className="ml-auto text-[10px] bg-purple-950 text-purple-400 border border-purple-800 px-2 py-0.5 rounded-full">Groq</span>
       </div>
 
       {/* Wallet context */}

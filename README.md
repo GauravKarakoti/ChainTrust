@@ -7,7 +7,7 @@
 ChainTrust perfectly aligns with the TigerGraph Track requirements by utilizing graph technology where it shines most:
 * **Following Money Trails:** Traversing multi-hop blockchain transactions to see where funds originate and where they end up.
 * **Fraud & Threat Detection:** Identifying circular transaction loops (wash trading) and tracing 1-to-many funding patterns (Sybil attacks).
-* **AI Synergy:** Taking the fast, complex network patterns found by TigerGraph and feeding them into GPT-4o to generate easy-to-understand risk assessments for end users.
+* **AI Synergy:** Taking the fast, complex network patterns found by TigerGraph and feeding them into Groq to generate easy-to-understand risk assessments for end users.
 
 ## 🚀 Features
 
@@ -21,7 +21,7 @@ ChainTrust perfectly aligns with the TigerGraph Track requirements by utilizing 
 * **Main Database:** TigerGraph (Community Edition / Savanna)
 * **Frontend:** React, Vite, Tailwind CSS
 * **Graph Visualization:** Cytoscape.js
-* **AI Analysis:** GPT-4o (OpenAI)
+* **AI Analysis:** Groq
 
 ## 🛠️ Local Setup
 
