@@ -13,7 +13,6 @@ const RISK_BADGE = {
 const TAG_COLORS = {
   'known-scam': 'bg-red-950 text-red-400',
   'blacklisted': 'bg-red-900 text-red-300',
-  'ofac-sanctioned': 'bg-red-950 text-red-500 border border-red-800', // NEW: Explicit sanctions tag
   'sybil-suspected': 'bg-orange-950 text-orange-400',
   'wash-trader': 'bg-orange-950 text-orange-400',
   'mixer-linked': 'bg-purple-950 text-purple-400',
@@ -27,34 +26,6 @@ const TAG_COLORS = {
   'suspicious': 'bg-amber-950 text-amber-400',
 }
 
-function getFlagEmoji(countryCode) {
-  if (!countryCode || countryCode.length !== 2) return '🌍';
-
-  const codePoints = countryCode
-    .toUpperCase()
-    .split('')
-    .map(char => 127397 + char.charCodeAt());
-
-  return String.fromCodePoint(...codePoints);
-}
-
-// ✅ Handle special regions + fallback
-function getRegionFlag(code) {
-  if (!code) return '❓';
-
-  const normalized = code.toUpperCase();
-
-  const specialCases = {
-    EU: '🇪🇺', // not a country
-  };
-
-  if (specialCases[normalized]) return specialCases[normalized];
-
-  return getFlagEmoji(normalized);
-}
-
-const HIGH_RISK_REGIONS = ['KP', 'IR', 'SY'];
-
 const RISK_FACTORS = [
   { label: 'Illicit Activity', score: 85, max: 100, color: '#ef4444', desc: 'Direct connection to flagged entities' },
   { label: 'Mixer Usage', score: 60, max: 100, color: '#f97316', desc: 'Interactions with coin mixers' },
@@ -64,7 +35,42 @@ const RISK_FACTORS = [
 
 export default function NodeInspector({ wallet, onClose }) {
   const [liveStats, setLiveStats] = useState({ balance: null, txCount: null, isLoading: false })
+  
+  // --- NEW: State for Auto-detected Location & Currency ---
+  const [localCurrency, setLocalCurrency] = useState(null) // e.g. { code: 'INR', rate: 83.15 }
+  const [showLocalCurrency, setShowLocalCurrency] = useState(false)
 
+  // 1. Fetch user's IP-based currency and exchange rate on mount
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function fetchLocationAndRate() {
+      try {
+        // Fetch User's local currency code based on IP
+        const ipRes = await fetch('https://ipapi.co/json/');
+        const ipData = await ipRes.json();
+        const currencyCode = ipData.currency; // e.g., "INR", "GBP", "EUR"
+
+        if (currencyCode) {
+          // Fetch live exchange rates against USD
+          const rateRes = await fetch('https://open.er-api.com/v6/latest/USD');
+          const rateData = await rateRes.json();
+          const rate = rateData.rates[currencyCode];
+
+          if (isMounted && rate) {
+            setLocalCurrency({ code: currencyCode, rate });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to auto-detect currency/rates:", error);
+      }
+    }
+    
+    fetchLocationAndRate();
+    return () => { isMounted = false };
+  }, []);
+
+  // 2. Fetch live Etherscan data when wallet changes
   useEffect(() => {
     if (!wallet || !wallet.address) return;
 
@@ -102,10 +108,8 @@ export default function NodeInspector({ wallet, onClose }) {
     }
 
     fetchRealData();
-
     return () => { isMounted = false };
   }, [wallet]);
-
 
   if (!wallet) return (
     <div className="h-full flex flex-col items-center justify-center text-center p-6">
@@ -129,18 +133,20 @@ export default function NodeInspector({ wallet, onClose }) {
   
   const displayTxCount = liveStats.txCount !== null ? liveStats.txCount.toLocaleString() : txCountMock.toLocaleString();
   const displayBalance = liveStats.balance !== null ? liveStats.balance : balanceMock;
-  const displayUsd = '$' + (Number(displayBalance) * 3200).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
-  const rawRegion = wallet.jurisdiction || (wallet.tags?.includes('ofac-sanctioned') ? 'KP' : null);
+  // --- NEW: Calculate dynamically based on user location toggle ---
+  const baseUsdValue = Number(displayBalance) * 3200; // Hardcoded $3200 per ETH for demo
+  
+  let activeLabel = 'USD';
+  let displayFiat = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(baseUsdValue);
 
-  const regionCode = rawRegion ? rawRegion.toUpperCase() : null;
-  const regionEmoji = getRegionFlag(regionCode);
-  console.log(wallet)
-
-  const displayJurisdiction = regionCode
-    ? `${regionEmoji} ${regionCode}`
-    : 'Unknown';
-
+  if (showLocalCurrency && localCurrency) {
+    activeLabel = localCurrency.code;
+    const localValue = baseUsdValue * localCurrency.rate;
+    // Using Intl.NumberFormat automatically handles correct currency symbols (like ₹, €, £, ¥) based on the code!
+    displayFiat = new Intl.NumberFormat(undefined, { style: 'currency', currency: localCurrency.code }).format(localValue);
+  }
+  
   let trustScoreMock = 50;
   let flaggedConnectionsMock = 0;
 
@@ -182,17 +188,37 @@ export default function NodeInspector({ wallet, onClose }) {
               {wallet.risk || 'UNKNOWN'}
             </span>
             <span className="text-[10px] text-slate-500 capitalize">{wallet.type}</span>
-            {/* NEW: Explicitly show entity name if available (e.g., Binance, Lazarus Group) */}
-            {wallet.entityName && (
-              <span className="text-[10px] text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-900">
-                {wallet.entityName}
-              </span>
-            )}
           </div>
           <p className="text-sm font-semibold text-white truncate">{wallet.short}</p>
           <p className="text-[10px] mono text-slate-500 mt-0.5 truncate">{wallet.address}</p>
         </div>
-        <button onClick={onClose} className="text-slate-600 hover:text-white transition-colors text-lg mt-0.5 flex-shrink-0">✕</button>
+        
+        {/* Right Header Actions */}
+        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+          <button onClick={onClose} className="text-slate-600 hover:text-white transition-colors text-lg mt-0.5">✕</button>
+          
+          {/* Currency Toggle UI (Only shows if local currency was successfully detected) */}
+          {localCurrency && localCurrency.code !== 'USD' && (
+            <div className="flex items-center bg-dark-700/50 p-1 rounded-md border border-[#1e2847]">
+              <button 
+                onClick={() => setShowLocalCurrency(!showLocalCurrency)}
+                className={`text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
+                  !showLocalCurrency ? 'bg-blue-900/60 text-blue-300' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                USD
+              </button>
+              <button 
+                onClick={() => setShowLocalCurrency(!showLocalCurrency)}
+                className={`text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
+                  showLocalCurrency ? 'bg-blue-900/60 text-blue-300' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {localCurrency.code}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Score + Stats */}
@@ -200,23 +226,16 @@ export default function NodeInspector({ wallet, onClose }) {
         <TrustScoreRing score={wallet.trustScore ?? trustScoreMock} risk={wallet.risk} size={90} />
         <div className="flex-1 grid grid-cols-2 gap-2">
           {[
-            { label: 'Region', value: displayJurisdiction }, // NEW
             { label: 'Chain', value: wallet.chain || 'ETH' },
             { label: 'Age', value: wallet.age || ageMock },
             { label: 'Txs', value: liveStats.isLoading ? '...' : displayTxCount },
             { label: 'Balance', value: liveStats.isLoading ? '...' : `${displayBalance} ETH` },
-            { label: 'USD', value: liveStats.isLoading ? '...' : displayUsd },
+            { label: activeLabel, value: liveStats.isLoading ? '...' : displayFiat },
             { label: '⚠ Links', value: wallet.flaggedConnections ?? flaggedConnectionsMock },
           ].map(({ label, value }) => (
             <div key={label}>
               <p className="text-[9px] text-slate-600 uppercase tracking-widest">{label}</p>
-              <p className={`text-xs font-semibold mono truncate ${
-                label === 'Region' && HIGH_RISK_REGIONS.includes(regionCode)
-                  ? 'text-red-400'
-                  : 'text-slate-200'
-              }`}>
-                {value}
-              </p>
+              <p className="text-xs font-semibold text-slate-200 mono truncate">{value}</p>
             </div>
           ))}
         </div>

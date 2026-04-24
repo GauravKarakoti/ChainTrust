@@ -11,7 +11,7 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
 
     if (cyRef.current) {
       cyRef.current.destroy()
-      cyRef.current = null // ADD THIS: Clear reference
+      cyRef.current = null 
     }
 
     const cy = cytoscape({
@@ -28,16 +28,14 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
 
     cy.on('tap', 'node', (evt) => {
       const node = evt.target
-      const data = node.data() // ✅ Get node data from TigerGraph format
+      const data = node.data() 
 
-      // ✅ Use TigerGraph attributes directly instead of mock profiles
       onNodeSelect({
         address: data.id,
         short: data.label || data.id,
         label: data.label || data.id,
         type: data.type || 'wallet',
-        risk: data.risk || 'UNKNOWN',
-        jurisdiction: data.jurisdiction || 'UNKNOWN'
+        risk: data.risk || 'UNKNOWN'
       })
 
       // Highlight connected
@@ -72,7 +70,7 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
     return () => {
       if (cyRef.current) {
         cyRef.current.destroy()
-        cyRef.current = null // ADD THIS: Clear reference
+        cyRef.current = null 
       }
     }
   }, [initCy])

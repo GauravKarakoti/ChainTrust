@@ -33,12 +33,7 @@ export async function fetchWalletGraph(address) {
         type: node.v_type.toLowerCase(), 
         risk: (node.attributes['@calculated_risk'] || node.attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', ''),
         address: node.v_id, 
-        short: node.attributes.short_address,
-        // NEW: Map the jurisdiction attribute from TigerGraph
-        jurisdiction: node.attributes.jurisdiction || null, 
-        // Optional: If you also added entityName or tags in TG, map them here too!
-        entityName: node.attributes.entity_name || null,
-        tags: node.attributes.tags ? node.attributes.tags.split(',') : []
+        short: node.attributes.short_address
       }
     }));
 
@@ -59,7 +54,7 @@ export async function fetchWalletGraph(address) {
   }
 }
 
-export async function upsertGraphData(transactions, riskMap = {}, metadataMap = {}) {
+export async function upsertGraphData(transactions, riskMap = {}) {
   const payload = {
     vertices: { "Wallet": {} },
     edges: { "Wallet": {} }
@@ -80,34 +75,13 @@ export async function upsertGraphData(transactions, riskMap = {}, metadataMap = 
         };
     }
 
-    // 2. Apply Risk Levels
+    // 2. Safely apply the risk levels
     if (riskMap[tx.from]) {
         payload.vertices.Wallet[tx.from].risk_level = { "value": riskMap[tx.from] };
     }
     if (riskMap[tx.to]) {
         payload.vertices.Wallet[tx.to].risk_level = { "value": riskMap[tx.to] };
     }
-
-    // --- NEW: Apply Metadata (Jurisdiction, Entity, Tags) ---
-    const applyMetadata = (walletAddress) => {
-        if (metadataMap[walletAddress]) {
-            const meta = metadataMap[walletAddress];
-            if (meta.jurisdiction) {
-                payload.vertices.Wallet[walletAddress].jurisdiction = { "value": meta.jurisdiction };
-            }
-            if (meta.entityName) {
-                payload.vertices.Wallet[walletAddress].entity_name = { "value": meta.entityName };
-            }
-            if (meta.tags && meta.tags.length > 0) {
-                // TG expects a string, so we join arrays with commas
-                const tagStr = Array.isArray(meta.tags) ? meta.tags.join(',') : meta.tags;
-                payload.vertices.Wallet[walletAddress].tags = { "value": tagStr };
-            }
-        }
-    };
-
-    applyMetadata(tx.from);
-    applyMetadata(tx.to);
 
     // 3. Edge setup
     if (!payload.edges.Wallet[tx.from]) {
@@ -157,71 +131,33 @@ export async function syncWalletTransactions(address) {
 
     const existingProfile = await fetchWalletProfile(lowerAddress);
     const riskMap = {};
-    const metadataMap = {};
 
-    // --- 1. LOCAL DEMO ENTITY MAP (Optional, but great for UI testing) ---
-    // Since enterprise APIs are gated, you can manually tag famous addresses here.
-    const KNOWN_ENTITIES = {
-      "0x28c6c06298d514db089934071355e5743bf21d60": { name: "Binance Cold Wallet", region: "AE" },
-      "0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c": { name: "Ronin Bridge Exploiter (Lazarus)", region: "KP" },
-      "0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc": { name: "Tornado Cash Router", region: "🌐" }
-    };
-
-    // --- 2. EXTRACT DATA FROM GOPLUS (Free API) ---
     try {
       const riskRes = await fetch(`https://api.gopluslabs.io/api/v1/address_security/${lowerAddress}?chain_id=1`);
       const riskData = await riskRes.json();
       
       let isMalicious = false;
-      let uiTags = [];
-      let uiRegion = null;
-      let uiEntityName = null;
-
-      // Check our local map first
-      if (KNOWN_ENTITIES[lowerAddress]) {
-        uiEntityName = KNOWN_ENTITIES[lowerAddress].name;
-        uiRegion = KNOWN_ENTITIES[lowerAddress].region;
-      }
-
+      
       if (riskData.result && riskData.result[lowerAddress]) {
-        const flags = riskData.result[lowerAddress];
-        
-        // Map GoPlus specific flags to your UI Tags
-        if (flags.sanctioned === "1") {
-            uiTags.push('ofac-sanctioned');
-            uiRegion = uiRegion || 'KP'; // Default sanctioned to North Korea flag for visual impact
-        }
-        if (flags.mixer === "1") uiTags.push('mixer-linked');
-        if (flags.phishing_activities === "1") uiTags.push('known-scam');
-        if (flags.cybercrime === "1" || flags.darkweb_transactions === "1") uiTags.push('blacklisted');
-        
-        // If ANY GoPlus risk flag is "1", mark it as malicious
-        isMalicious = Object.values(flags).some(val => String(val) === "1");
+        const securityFlags = riskData.result[lowerAddress];
+        isMalicious = Object.values(securityFlags).some(val => String(val) === "1");
       }
       
-      // Calculate final risk level
       if (isMalicious) {
         riskMap[lowerAddress] = 'CRITICAL';
       } else {
         const currentRisk = existingProfile?.risk || 'UNKNOWN';
-        if (currentRisk === 'UNKNOWN') riskMap[lowerAddress] = 'SAFE';
-      }
-
-      // If we found any tags, region, or entity name, save it to the metadata map
-      if (uiTags.length > 0 || uiRegion || uiEntityName) {
-         metadataMap[lowerAddress] = {
-             jurisdiction: uiRegion,
-             entityName: uiEntityName,
-             tags: uiTags
-         };
+        if (currentRisk === 'UNKNOWN') {
+           riskMap[lowerAddress] = 'SAFE';
+        }
       }
       
     } catch (apiError) {
       console.warn("GoPlus Risk API failed, falling back to GSQL logic:", apiError);
     }
 
-    // 3. Pass BOTH the riskMap and the metadataMap into upsert
-    await upsertGraphData(transactions, riskMap, metadataMap);
+    // Pass the riskMap into upsert
+    await upsertGraphData(transactions, riskMap);
     console.log(`✅ Synced ${transactions.length} transactions for ${address} to TigerGraph`);
     
   } catch (error) {
@@ -245,7 +181,6 @@ export async function fetchWalletProfile(address) {
     const attributes = data.results[0].attributes;
     const risk = (attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', '');
     
-    // Calculate deterministic trust score if missing from backend
     let trustScore = attributes.trust_score;
     if (trustScore === undefined) {
       let seed = 0;
@@ -268,7 +203,7 @@ export async function fetchWalletProfile(address) {
       address: address,
       short: attributes.short_address || address,
       risk,
-      trustScore // Append the calculated or fetched score
+      trustScore 
     };
   } catch (error) {
     console.error('TigerGraph profile error:', error);
@@ -276,9 +211,6 @@ export async function fetchWalletProfile(address) {
   }
 }
 
-/**
- * Fetches preset wallet queries for the search bar
- */
 export async function fetchPresetWallets() {
   try {
     const response = await fetch(`/restpp/query/ChainTrustGraph/get_preset_wallets`, {
@@ -294,7 +226,6 @@ export async function fetchPresetWallets() {
 
 export async function fetchAIExplanations(address) {
   try {
-    // 1. Fetch graph metrics from TigerGraph
     const tgResponse = await fetch(`/restpp/query/ChainTrustGraph/generate_ai_explanation?wallet_id=${address}`, {
       headers: { 'Authorization': `Bearer ${TG_TOKEN}` }
     });
@@ -314,8 +245,6 @@ export async function fetchAIExplanations(address) {
       return [`Metrics: ${baseRisk} risk, ${totalTxs} txs.`, "Add VITE_GROQ_API_KEY to enable AI."];
     }
 
-    // 2. Updated Prompt: Includes the word "json" to satisfy the API requirement
-    // and specifies a structured array format for the UI.
     const prompt = `You are a cybersecurity blockchain analyst. Analyze this wallet: ${address}.
 
     Metrics:
@@ -355,10 +284,8 @@ export async function fetchAIExplanations(address) {
       response_format: { type: "json_object" },
     });
 
-    // 3. Parse and return the array
     const content = JSON.parse(completion.choices[0]?.message.content || '{"explanations": []}');
     
-    // Return the array directly so AIExplainer.jsx can map through it
     return content.explanations && content.explanations.length > 0 
       ? content.explanations 
       : ["Analysis complete. No specific threats identified."];
@@ -369,9 +296,6 @@ export async function fetchAIExplanations(address) {
   }
 }
 
-/**
- * Fetches live real-time network alerts
- */
 export async function fetchLiveAlerts() {
   try {
     const response = await fetch(`/restpp/query/ChainTrustGraph/get_live_alerts`, {
