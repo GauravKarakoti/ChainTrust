@@ -23,7 +23,6 @@ export async function fetchWalletGraph(address) {
       return { nodes: [], edges: [] };
     }
     
-    // Find the objects containing Nodes and Edges respectively
     const nodesData = data.results.find(r => r.Nodes)?.Nodes || [];
     const edgesData = data.results.find(r => r.Edges)?.Edges || [];
     
@@ -34,14 +33,17 @@ export async function fetchWalletGraph(address) {
         type: node.v_type.toLowerCase(), 
         risk: (node.attributes['@calculated_risk'] || node.attributes.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', ''),
         address: node.v_id, 
-        short: node.attributes.short_address
+        short: node.attributes.short_address,
+        // NEW: Map the jurisdiction attribute from TigerGraph
+        jurisdiction: node.attributes.jurisdiction || null, 
+        // Optional: If you also added entityName or tags in TG, map them here too!
+        entityName: node.attributes.entity_name || null,
+        tags: node.attributes.tags ? node.attributes.tags.split(',') : []
       }
     }));
 
     const edges = edgesData.map(edge => ({
       data: {
-        // TigerGraph doesn't always return a native e_id. 
-        // Using a composite ID prevents graph rendering bugs if e_id is undefined.
         id: edge.e_id || `${edge.from_id}-${edge.to_id}`, 
         source: edge.from_id,
         target: edge.to_id,
@@ -57,7 +59,7 @@ export async function fetchWalletGraph(address) {
   }
 }
 
-export async function upsertGraphData(transactions, riskMap = {}) {
+export async function upsertGraphData(transactions, riskMap = {}, metadataMap = {}) {
   const payload = {
     vertices: { "Wallet": {} },
     edges: { "Wallet": {} }
@@ -78,14 +80,34 @@ export async function upsertGraphData(transactions, riskMap = {}) {
         };
     }
 
-    // 2. CRITICAL FIX: Only attach risk_level if it explicitly exists in riskMap.
-    // This prevents overwriting existing CRITICAL nodes with UNKNOWN.
+    // 2. Apply Risk Levels
     if (riskMap[tx.from]) {
         payload.vertices.Wallet[tx.from].risk_level = { "value": riskMap[tx.from] };
     }
     if (riskMap[tx.to]) {
         payload.vertices.Wallet[tx.to].risk_level = { "value": riskMap[tx.to] };
     }
+
+    // --- NEW: Apply Metadata (Jurisdiction, Entity, Tags) ---
+    const applyMetadata = (walletAddress) => {
+        if (metadataMap[walletAddress]) {
+            const meta = metadataMap[walletAddress];
+            if (meta.jurisdiction) {
+                payload.vertices.Wallet[walletAddress].jurisdiction = { "value": meta.jurisdiction };
+            }
+            if (meta.entityName) {
+                payload.vertices.Wallet[walletAddress].entity_name = { "value": meta.entityName };
+            }
+            if (meta.tags && meta.tags.length > 0) {
+                // TG expects a string, so we join arrays with commas
+                const tagStr = Array.isArray(meta.tags) ? meta.tags.join(',') : meta.tags;
+                payload.vertices.Wallet[walletAddress].tags = { "value": tagStr };
+            }
+        }
+    };
+
+    applyMetadata(tx.from);
+    applyMetadata(tx.to);
 
     // 3. Edge setup
     if (!payload.edges.Wallet[tx.from]) {
@@ -133,39 +155,73 @@ export async function syncWalletTransactions(address) {
       value: (Number(tx.value) / 1e18).toFixed(4) 
     }));
 
-    // 1. Fetch current profile from TigerGraph
     const existingProfile = await fetchWalletProfile(lowerAddress);
-
     const riskMap = {};
+    const metadataMap = {};
+
+    // --- 1. LOCAL DEMO ENTITY MAP (Optional, but great for UI testing) ---
+    // Since enterprise APIs are gated, you can manually tag famous addresses here.
+    const KNOWN_ENTITIES = {
+      "0x28c6c06298d514db089934071355e5743bf21d60": { name: "Binance Cold Wallet", region: "AE" },
+      "0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c": { name: "Ronin Bridge Exploiter (Lazarus)", region: "KP" },
+      "0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc": { name: "Tornado Cash Router", region: "🌐" }
+    };
+
+    // --- 2. EXTRACT DATA FROM GOPLUS (Free API) ---
     try {
       const riskRes = await fetch(`https://api.gopluslabs.io/api/v1/address_security/${lowerAddress}?chain_id=1`);
       const riskData = await riskRes.json();
       
       let isMalicious = false;
-      
-      // Only check flags if the address actually exists in the GoPlus response
+      let uiTags = [];
+      let uiRegion = null;
+      let uiEntityName = null;
+
+      // Check our local map first
+      if (KNOWN_ENTITIES[lowerAddress]) {
+        uiEntityName = KNOWN_ENTITIES[lowerAddress].name;
+        uiRegion = KNOWN_ENTITIES[lowerAddress].region;
+      }
+
       if (riskData.result && riskData.result[lowerAddress]) {
-        const securityFlags = riskData.result[lowerAddress];
-        isMalicious = Object.values(securityFlags).some(val => String(val) === "1");
+        const flags = riskData.result[lowerAddress];
+        
+        // Map GoPlus specific flags to your UI Tags
+        if (flags.sanctioned === "1") {
+            uiTags.push('ofac-sanctioned');
+            uiRegion = uiRegion || 'KP'; // Default sanctioned to North Korea flag for visual impact
+        }
+        if (flags.mixer === "1") uiTags.push('mixer-linked');
+        if (flags.phishing_activities === "1") uiTags.push('known-scam');
+        if (flags.cybercrime === "1" || flags.darkweb_transactions === "1") uiTags.push('blacklisted');
+        
+        // If ANY GoPlus risk flag is "1", mark it as malicious
+        isMalicious = Object.values(flags).some(val => String(val) === "1");
       }
       
-      // 2. Safely apply the risk levels
+      // Calculate final risk level
       if (isMalicious) {
         riskMap[lowerAddress] = 'CRITICAL';
       } else {
-        // If GoPlus doesn't flag it, check if it's a new or UNKNOWN node
         const currentRisk = existingProfile?.risk || 'UNKNOWN';
-        if (currentRisk === 'UNKNOWN') {
-           riskMap[lowerAddress] = 'SAFE';
-        }
+        if (currentRisk === 'UNKNOWN') riskMap[lowerAddress] = 'SAFE';
+      }
+
+      // If we found any tags, region, or entity name, save it to the metadata map
+      if (uiTags.length > 0 || uiRegion || uiEntityName) {
+         metadataMap[lowerAddress] = {
+             jurisdiction: uiRegion,
+             entityName: uiEntityName,
+             tags: uiTags
+         };
       }
       
     } catch (apiError) {
       console.warn("GoPlus Risk API failed, falling back to GSQL logic:", apiError);
     }
 
-    // Pass the riskMap into upsert
-    await upsertGraphData(transactions, riskMap);
+    // 3. Pass BOTH the riskMap and the metadataMap into upsert
+    await upsertGraphData(transactions, riskMap, metadataMap);
     console.log(`✅ Synced ${transactions.length} transactions for ${address} to TigerGraph`);
     
   } catch (error) {

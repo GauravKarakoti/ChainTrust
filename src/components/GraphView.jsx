@@ -37,8 +37,7 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
         label: data.label || data.id,
         type: data.type || 'wallet',
         risk: data.risk || 'UNKNOWN',
-        // Optional: you can add a fetch call in App.jsx when onNodeSelect is triggered 
-        // to get the deep profile via fetchWalletProfile(data.id)
+        jurisdiction: data.jurisdiction || 'UNKNOWN'
       })
 
       // Highlight connected

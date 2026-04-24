@@ -13,6 +13,7 @@ const RISK_BADGE = {
 const TAG_COLORS = {
   'known-scam': 'bg-red-950 text-red-400',
   'blacklisted': 'bg-red-900 text-red-300',
+  'ofac-sanctioned': 'bg-red-950 text-red-500 border border-red-800', // NEW: Explicit sanctions tag
   'sybil-suspected': 'bg-orange-950 text-orange-400',
   'wash-trader': 'bg-orange-950 text-orange-400',
   'mixer-linked': 'bg-purple-950 text-purple-400',
@@ -26,6 +27,34 @@ const TAG_COLORS = {
   'suspicious': 'bg-amber-950 text-amber-400',
 }
 
+function getFlagEmoji(countryCode) {
+  if (!countryCode || countryCode.length !== 2) return '🌍';
+
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt());
+
+  return String.fromCodePoint(...codePoints);
+}
+
+// ✅ Handle special regions + fallback
+function getRegionFlag(code) {
+  if (!code) return '❓';
+
+  const normalized = code.toUpperCase();
+
+  const specialCases = {
+    EU: '🇪🇺', // not a country
+  };
+
+  if (specialCases[normalized]) return specialCases[normalized];
+
+  return getFlagEmoji(normalized);
+}
+
+const HIGH_RISK_REGIONS = ['KP', 'IR', 'SY'];
+
 const RISK_FACTORS = [
   { label: 'Illicit Activity', score: 85, max: 100, color: '#ef4444', desc: 'Direct connection to flagged entities' },
   { label: 'Mixer Usage', score: 60, max: 100, color: '#f97316', desc: 'Interactions with coin mixers' },
@@ -34,7 +63,6 @@ const RISK_FACTORS = [
 ]
 
 export default function NodeInspector({ wallet, onClose }) {
-  // --- NEW: State for real Etherscan data ---
   const [liveStats, setLiveStats] = useState({ balance: null, txCount: null, isLoading: false })
 
   useEffect(() => {
@@ -51,7 +79,6 @@ export default function NodeInspector({ wallet, onClose }) {
         const balanceRes = await fetch(`/etherscan/v2/api?chainid=1&module=account&action=balance&address=${address}&tag=latest&apikey=${apiKey}`);
         const balanceData = await balanceRes.json();
 
-        // Fetch Real Tx Count (Route through our /etherscan proxy)
         const txCountRes = await fetch(`/etherscan/v2/api?chainid=1&module=proxy&action=eth_getTransactionCount&address=${address}&tag=latest&apikey=${apiKey}`);
         const txCountData = await txCountRes.json();
 
@@ -60,10 +87,10 @@ export default function NodeInspector({ wallet, onClose }) {
           let realTxCount = null;
 
           if (balanceData.status === "1" && balanceData.result) {
-            realBalance = (Number(balanceData.result) / 1e18).toFixed(4); // Convert Wei to ETH
+            realBalance = (Number(balanceData.result) / 1e18).toFixed(4);
           }
           if (txCountData.result) {
-            realTxCount = parseInt(txCountData.result, 16); // Hex to Int
+            realTxCount = parseInt(txCountData.result, 16);
           }
 
           setLiveStats({ balance: realBalance, txCount: realTxCount, isLoading: false });
@@ -89,7 +116,6 @@ export default function NodeInspector({ wallet, onClose }) {
     </div>
   )
 
-  // 1. Generate a robust seed from the whole address for better pseudo-randomness
   const addrStr = wallet.address || wallet.short || "0x0";
   let seed = 0;
   for (let i = 0; i < addrStr.length; i++) {
@@ -97,16 +123,24 @@ export default function NodeInspector({ wallet, onClose }) {
   }
   const variance = (seed % 15) - 7; 
 
-  // 2. Deterministic Mock Stats (Used as fallback if API fails)
   const txCountMock = (seed * 17) % 8500 + 12;
   const balanceMock = ((seed * 0.031) % 45).toFixed(3);
   const ageMock = ((seed % 48) + 1) + ' mos';
   
-  // --- NEW: Determine Display Values (Live vs Mock) ---
   const displayTxCount = liveStats.txCount !== null ? liveStats.txCount.toLocaleString() : txCountMock.toLocaleString();
   const displayBalance = liveStats.balance !== null ? liveStats.balance : balanceMock;
   const displayUsd = '$' + (Number(displayBalance) * 3200).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
+  const rawRegion = wallet.jurisdiction || (wallet.tags?.includes('ofac-sanctioned') ? 'KP' : null);
+
+  const regionCode = rawRegion ? rawRegion.toUpperCase() : null;
+  const regionEmoji = getRegionFlag(regionCode);
+  console.log(wallet)
+
+  const displayJurisdiction = regionCode
+    ? `${regionEmoji} ${regionCode}`
+    : 'Unknown';
+
   let trustScoreMock = 50;
   let flaggedConnectionsMock = 0;
 
@@ -121,7 +155,6 @@ export default function NodeInspector({ wallet, onClose }) {
     flaggedConnectionsMock = (seed % 10) + 3;
   }
 
-  // 3. Process Risk Factor bars
   const riskFactors = RISK_FACTORS.map(f => {
     let finalScore = f.score;
     let finalColor = f.color;
@@ -149,6 +182,12 @@ export default function NodeInspector({ wallet, onClose }) {
               {wallet.risk || 'UNKNOWN'}
             </span>
             <span className="text-[10px] text-slate-500 capitalize">{wallet.type}</span>
+            {/* NEW: Explicitly show entity name if available (e.g., Binance, Lazarus Group) */}
+            {wallet.entityName && (
+              <span className="text-[10px] text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-900">
+                {wallet.entityName}
+              </span>
+            )}
           </div>
           <p className="text-sm font-semibold text-white truncate">{wallet.short}</p>
           <p className="text-[10px] mono text-slate-500 mt-0.5 truncate">{wallet.address}</p>
@@ -161,6 +200,7 @@ export default function NodeInspector({ wallet, onClose }) {
         <TrustScoreRing score={wallet.trustScore ?? trustScoreMock} risk={wallet.risk} size={90} />
         <div className="flex-1 grid grid-cols-2 gap-2">
           {[
+            { label: 'Region', value: displayJurisdiction }, // NEW
             { label: 'Chain', value: wallet.chain || 'ETH' },
             { label: 'Age', value: wallet.age || ageMock },
             { label: 'Txs', value: liveStats.isLoading ? '...' : displayTxCount },
@@ -170,7 +210,13 @@ export default function NodeInspector({ wallet, onClose }) {
           ].map(({ label, value }) => (
             <div key={label}>
               <p className="text-[9px] text-slate-600 uppercase tracking-widest">{label}</p>
-              <p className="text-xs font-semibold text-slate-200 mono truncate">{value}</p>
+              <p className={`text-xs font-semibold mono truncate ${
+                label === 'Region' && HIGH_RISK_REGIONS.includes(regionCode)
+                  ? 'text-red-400'
+                  : 'text-slate-200'
+              }`}>
+                {value}
+              </p>
             </div>
           ))}
         </div>
