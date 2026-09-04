@@ -347,25 +347,3 @@ export async function fetchAIExplanations(address) {
     await session.close();
   }
 }
-
-export async function fetchLiveAlerts() {
-  const session = driver.session();
-  try {
-    const result = await session.run(
-      `MATCH (a:Alert) RETURN a.id AS id, a.severity AS severity, a.pattern AS pattern, a.title AS title, a.description AS description, a.timestamp AS timestamp ORDER BY a.timestamp DESC LIMIT 12`
-    );
-    return result.records.map(record => ({
-      id: record.get('id'),
-      severity: record.get('severity'),
-      pattern: record.get('pattern'),
-      title: record.get('title'),
-      description: record.get('description'),
-      timestamp: record.get('timestamp')
-    }));
-  } catch (error) {
-    console.error('Failed to fetch live alerts from Neo4j:', error);
-    return [];
-  } finally {
-    await session.close();
-  }
-}

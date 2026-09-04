@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react'
 import GraphView from './components/GraphView'
 import NodeInspector from './components/NodeInspector'
 import AIExplainer from './components/AIExplainer'
-import AlertsPanel from './components/AlertsPanel'
 import SearchBar from './components/SearchBar'
 import TrustScoreRing from './components/TrustScoreRing'
 import { fetchWalletGraph, fetchWalletProfile, syncWalletTransactions } from './services/neo4j'
@@ -233,14 +232,6 @@ export default function App() {
           </div>
         </div>
       </main>
-
-      {/* Footer: Alerts */}
-      <div className="flex-shrink-0 max-w-[1600px] mx-auto w-full px-4 pb-4">
-        <AlertsPanel 
-          isExpanded={isAlertsExpanded} 
-          onToggleExpand={() => setIsAlertsExpanded(!isAlertsExpanded)} 
-        />
-      </div>
     </div>
   )
 }
