@@ -93,7 +93,7 @@ export async function syncWalletTransactions(address) {
   const lowerAddress = address.toLowerCase();
 
   try {
-    const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=50&sort=desc&apikey=${ETHERSCAN_KEY}`;
+    const url = `/etherscan/v2/api?chainid=1&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=50&sort=desc&apikey=${ETHERSCAN_KEY}`;
     
     const response = await fetch(url);
     const data = await response.json();
@@ -119,7 +119,7 @@ export async function syncWalletTransactions(address) {
       const batch = uniqueAddresses.slice(i, i + batchSize);
       await Promise.all(batch.map(async (addr) => {
         try {
-          const riskRes = await fetch(`https://api.gopluslabs.io/api/v1/address_security/${addr}?chain_id=1`);
+          const riskRes = await fetch(`/goplus/api/v1/address_security/${addr}?chain_id=1`);
           const riskData = await riskRes.json();
           
           let isMalicious = false;

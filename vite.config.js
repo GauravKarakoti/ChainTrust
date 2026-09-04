@@ -8,16 +8,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        '/restpp': {
-          target: env.VITE_TG_URL,
+        '/etherscan': {
+          target: 'https://api.etherscan.io',
           changeOrigin: true,
           secure: false,
-        },
-        '/tgcloud': {
-          target: 'https://api.tgcloud.io',
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/tgcloud/, ''),
+          rewrite: (path) => path.replace(/^\/etherscan/, ''),
           configure: (proxy, _options) => {
             proxy.on('proxyReq', (proxyReq, req, _res) => {
               proxyReq.removeHeader('Origin');
@@ -25,11 +20,11 @@ export default defineConfig(({ mode }) => {
             });
           }
         },
-        '/etherscan': {
-          target: 'https://api.etherscan.io',
+        '/goplus': {
+          target: 'https://api.gopluslabs.io',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/etherscan/, ''),
+          rewrite: (path) => path.replace(/^\/goplus/, ''),
           configure: (proxy, _options) => {
             proxy.on('proxyReq', (proxyReq, req, _res) => {
               proxyReq.removeHeader('Origin');

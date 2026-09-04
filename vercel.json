@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/restpp/:path*",
-      "destination": "https://tg-70226cc2-f773-4ef5-8a1c-165418ab6779.tg-2635877100.i.tgcloud.io/restpp/:path*"
+      "source": "/etherscan/:path*",
+      "destination": "https://api.etherscan.io/:path*"
+    },
+    {
+      "source": "/goplus/:path*",
+      "destination": "https://api.gopluslabs.io/:path*"
     },
     {
       "source": "/(.*)",
