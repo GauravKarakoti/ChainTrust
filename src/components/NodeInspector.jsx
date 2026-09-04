@@ -2,57 +2,48 @@ import { useState, useEffect } from 'react'
 import TrustScoreRing from './TrustScoreRing'
 
 const RISK_BADGE = {
-  CRITICAL: 'bg-red-950 text-red-400 border-red-800',
-  HIGH: 'bg-orange-950 text-orange-400 border-orange-800',
-  MEDIUM: 'bg-amber-950 text-amber-400 border-amber-800',
-  LOW: 'bg-green-950 text-green-400 border-green-800',
-  SAFE: 'bg-emerald-950 text-emerald-400 border-emerald-800',
-  UNKNOWN: 'bg-slate-900 text-slate-400 border-slate-700',
+  CRITICAL: 'bg-gta-red text-white border-black font-gta tracking-widest text-lg',
+  HIGH: 'bg-orange-600 text-white border-black font-gta tracking-widest text-lg',
+  MEDIUM: 'bg-amber-500 text-black border-black font-gta tracking-widest text-lg',
+  LOW: 'bg-gray-700 text-white border-black font-gta tracking-widest text-lg',
+  SAFE: 'bg-gta-green text-black border-black font-gta tracking-widest text-lg',
+  UNKNOWN: 'bg-black text-white border-gray-700 font-gta tracking-widest text-lg',
 }
 
 const TAG_COLORS = {
-  'known-scam': 'bg-red-950 text-red-400',
-  'blacklisted': 'bg-red-900 text-red-300',
-  'sybil-suspected': 'bg-orange-950 text-orange-400',
-  'wash-trader': 'bg-orange-950 text-orange-400',
-  'mixer-linked': 'bg-purple-950 text-purple-400',
-  'sybil-farm': 'bg-orange-950 text-orange-400',
-  'sybil-funder': 'bg-orange-900 text-orange-300',
-  'tornado-fork': 'bg-red-950 text-red-400',
-  'verified': 'bg-green-950 text-green-400',
-  'audited': 'bg-emerald-950 text-emerald-400',
-  'kyc': 'bg-blue-950 text-blue-400',
-  'exchange': 'bg-cyan-950 text-cyan-400',
-  'suspicious': 'bg-amber-950 text-amber-400',
+  'known-scam': 'bg-gta-red text-white border border-black',
+  'blacklisted': 'bg-black text-gta-red border border-gta-red',
+  'sybil-suspected': 'bg-orange-600 text-white border border-black',
+  'wash-trader': 'bg-amber-500 text-black border border-black',
+  'mixer-linked': 'bg-purple-700 text-white border border-black',
+  'tornado-fork': 'bg-gta-red text-white border border-black',
+  'verified': 'bg-gta-green text-black border border-black',
+  'kyc': 'bg-gta-blue text-white border border-black',
+  'exchange': 'bg-cyan-600 text-black border border-black',
+  'suspicious': 'bg-yellow-400 text-black border border-black',
 }
 
 const RISK_FACTORS = [
-  { label: 'Illicit Activity', score: 85, max: 100, color: '#ef4444', desc: 'Direct connection to flagged entities' },
+  { label: 'Illicit Activity', score: 85, max: 100, color: '#ff2a2a', desc: 'Direct connection to flagged entities' },
   { label: 'Mixer Usage', score: 60, max: 100, color: '#f97316', desc: 'Interactions with coin mixers' },
   { label: 'Sybil Pattern', score: 40, max: 100, color: '#eab308', desc: 'Wash trading or farming behavior' },
-  { label: 'Age & History', score: 10, max: 100, color: '#22c55e', desc: 'Account maturity score' }
+  { label: 'Account Age', score: 10, max: 100, color: '#54b649', desc: 'Account maturity score' }
 ]
 
 export default function NodeInspector({ wallet, onClose }) {
   const [liveStats, setLiveStats] = useState({ balance: null, txCount: null, isLoading: false })
-  
-  // --- NEW: State for Auto-detected Location & Currency ---
-  const [localCurrency, setLocalCurrency] = useState(null) // e.g. { code: 'INR', rate: 83.15 }
+  const [localCurrency, setLocalCurrency] = useState(null) 
   const [showLocalCurrency, setShowLocalCurrency] = useState(false)
 
-  // 1. Fetch user's IP-based currency and exchange rate on mount
   useEffect(() => {
     let isMounted = true;
-    
     async function fetchLocationAndRate() {
       try {
-        // Fetch User's local currency code based on IP
         const ipRes = await fetch('https://ipapi.co/json/');
         const ipData = await ipRes.json();
-        const currencyCode = ipData.currency; // e.g., "INR", "GBP", "EUR"
+        const currencyCode = ipData.currency; 
 
         if (currencyCode) {
-          // Fetch live exchange rates against USD
           const rateRes = await fetch('https://open.er-api.com/v6/latest/USD');
           const rateData = await rateRes.json();
           const rate = rateData.rates[currencyCode];
@@ -65,15 +56,12 @@ export default function NodeInspector({ wallet, onClose }) {
         console.error("Failed to auto-detect currency/rates:", error);
       }
     }
-    
     fetchLocationAndRate();
     return () => { isMounted = false };
   }, []);
 
-  // 2. Fetch live Etherscan data when wallet changes
   useEffect(() => {
     if (!wallet || !wallet.address) return;
-
     let isMounted = true;
     setLiveStats({ balance: null, txCount: null, isLoading: true });
 
@@ -106,17 +94,16 @@ export default function NodeInspector({ wallet, onClose }) {
         if (isMounted) setLiveStats(prev => ({ ...prev, isLoading: false }));
       }
     }
-
     fetchRealData();
     return () => { isMounted = false };
   }, [wallet]);
 
   if (!wallet) return (
-    <div className="h-full flex flex-col items-center justify-center text-center p-6">
-      <div className="w-16 h-16 rounded-full bg-dark-700 border border-[#1e2847] flex items-center justify-center mb-4 text-2xl">
-        🔍
+    <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-gta-hudBase border-4 border-black font-hud shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+      <div className="w-16 h-16 bg-black border-2 border-gray-600 flex items-center justify-center mb-4 text-3xl shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+        🎯
       </div>
-      <p className="text-slate-400 text-sm">Select a node in the graph to inspect wallet details</p>
+      <p className="text-white text-lg font-bold uppercase tracking-widest">Select target on radar</p>
     </div>
   )
 
@@ -134,8 +121,7 @@ export default function NodeInspector({ wallet, onClose }) {
   const displayTxCount = liveStats.txCount !== null ? liveStats.txCount.toLocaleString() : txCountMock.toLocaleString();
   const displayBalance = liveStats.balance !== null ? liveStats.balance : balanceMock;
   
-  // --- NEW: Calculate dynamically based on user location toggle ---
-  const baseUsdValue = Number(displayBalance) * 3200; // Hardcoded $3200 per ETH for demo
+  const baseUsdValue = Number(displayBalance) * 3200; 
   
   let activeLabel = 'USD';
   let displayFiat = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(baseUsdValue);
@@ -143,7 +129,6 @@ export default function NodeInspector({ wallet, onClose }) {
   if (showLocalCurrency && localCurrency) {
     activeLabel = localCurrency.code;
     const localValue = baseUsdValue * localCurrency.rate;
-    // Using Intl.NumberFormat automatically handles correct currency symbols (like ₹, €, £, ¥) based on the code!
     displayFiat = new Intl.NumberFormat(undefined, { style: 'currency', currency: localCurrency.code }).format(localValue);
   }
   
@@ -166,11 +151,11 @@ export default function NodeInspector({ wallet, onClose }) {
     let finalColor = f.color;
 
     if (wallet.risk === 'SAFE' || wallet.risk === 'LOW') {
-      finalScore = f.label === 'Age & History' ? 80 + variance : Math.max(0, 5 + variance);
-      finalColor = '#10b981';
+      finalScore = f.label === 'Account Age' ? 80 + variance : Math.max(0, 5 + variance);
+      finalColor = '#54b649';
     } else if (wallet.risk === 'MEDIUM') {
       finalScore = Math.max(10, f.score - 30 + variance);
-      finalColor = '#eab308';
+      finalColor = '#f97316';
     } else {
       finalScore = Math.min(100, Math.max(0, f.score + variance));
     }
@@ -179,39 +164,37 @@ export default function NodeInspector({ wallet, onClose }) {
   });
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto">
+    <div className="h-full flex flex-col overflow-y-auto bg-gta-hudBase border-4 border-black font-hud shadow-[0_0_15px_rgba(0,0,0,0.8)]">
       {/* Header */}
-      <div className="p-4 border-b border-[#1e2847] flex items-start justify-between gap-3 flex-shrink-0">
+      <div className="p-4 border-b-4 border-black bg-black/60 flex items-start justify-between gap-3 flex-shrink-0">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border uppercase tracking-wider ${RISK_BADGE[wallet.risk] || RISK_BADGE.UNKNOWN}`}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`px-2 py-0.5 border-2 uppercase ${RISK_BADGE[wallet.risk] || RISK_BADGE.UNKNOWN}`} style={{ WebkitTextStroke: '0.5px black' }}>
               {wallet.risk || 'UNKNOWN'}
             </span>
-            <span className="text-[10px] text-slate-500 capitalize">{wallet.type}</span>
+            <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest bg-gray-900 px-2 py-1 border border-gray-700">{wallet.type}</span>
           </div>
-          <p className="text-sm font-semibold text-white truncate">{wallet.short}</p>
-          <p className="text-[10px] mono text-slate-500 mt-0.5 truncate">{wallet.address}</p>
+          <p className="text-xl font-black text-white uppercase truncate">{wallet.short}</p>
+          <p className="text-xs text-gta-green font-bold mt-0.5 truncate">{wallet.address}</p>
         </div>
         
-        {/* Right Header Actions */}
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <button onClick={onClose} className="text-slate-600 hover:text-white transition-colors text-lg mt-0.5">✕</button>
+        <div className="flex flex-col items-end gap-3 flex-shrink-0">
+          <button onClick={onClose} className="w-8 h-8 bg-black hover:bg-white text-gray-400 hover:text-black border-2 border-gray-600 hover:border-black font-black flex items-center justify-center transition-all shadow-md">✕</button>
           
-          {/* Currency Toggle UI (Only shows if local currency was successfully detected) */}
           {localCurrency && localCurrency.code !== 'USD' && (
-            <div className="flex items-center bg-dark-700/50 p-1 rounded-md border border-[#1e2847]">
+            <div className="flex items-center bg-black p-1 border-2 border-gray-800 shadow-inner">
               <button 
                 onClick={() => setShowLocalCurrency(!showLocalCurrency)}
-                className={`text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
-                  !showLocalCurrency ? 'bg-blue-900/60 text-blue-300' : 'text-slate-400 hover:text-white'
+                className={`text-[10px] font-bold px-3 py-1 uppercase tracking-widest transition-colors ${
+                  !showLocalCurrency ? 'bg-white text-black' : 'text-gray-500 hover:text-white'
                 }`}
               >
                 USD
               </button>
               <button 
                 onClick={() => setShowLocalCurrency(!showLocalCurrency)}
-                className={`text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
-                  showLocalCurrency ? 'bg-blue-900/60 text-blue-300' : 'text-slate-400 hover:text-white'
+                className={`text-[10px] font-bold px-3 py-1 uppercase tracking-widest transition-colors ${
+                  showLocalCurrency ? 'bg-white text-black' : 'text-gray-500 hover:text-white'
                 }`}
               >
                 {localCurrency.code}
@@ -222,20 +205,20 @@ export default function NodeInspector({ wallet, onClose }) {
       </div>
 
       {/* Score + Stats */}
-      <div className="p-4 border-b border-[#1e2847] flex gap-4 items-center flex-shrink-0">
-        <TrustScoreRing score={wallet.trustScore ?? trustScoreMock} risk={wallet.risk} size={90} />
-        <div className="flex-1 grid grid-cols-2 gap-2">
+      <div className="p-4 border-b-4 border-black bg-black/40 flex flex-col sm:flex-row gap-6 items-center flex-shrink-0">
+        <TrustScoreRing score={wallet.trustScore ?? trustScoreMock} risk={wallet.risk} size={100} />
+        <div className="flex-1 grid grid-cols-2 gap-3 w-full">
           {[
-            { label: 'Chain', value: wallet.chain || 'ETH' },
-            { label: 'Age', value: wallet.age || ageMock },
-            { label: 'Txs', value: liveStats.isLoading ? '...' : displayTxCount },
-            { label: 'Balance', value: liveStats.isLoading ? '...' : `${displayBalance} ETH` },
-            { label: activeLabel, value: liveStats.isLoading ? '...' : displayFiat },
-            { label: '⚠ Links', value: wallet.flaggedConnections ?? flaggedConnectionsMock },
+            { label: 'Network', value: wallet.chain || 'ETH' },
+            { label: 'Active', value: wallet.age || ageMock },
+            { label: 'Total Txs', value: liveStats.isLoading ? 'SCANNING' : displayTxCount },
+            { label: 'Stash', value: liveStats.isLoading ? 'SCANNING' : `${displayBalance} ETH` },
+            { label: activeLabel, value: liveStats.isLoading ? 'SCANNING' : displayFiat },
+            { label: 'Hostiles', value: wallet.flaggedConnections ?? flaggedConnectionsMock },
           ].map(({ label, value }) => (
-            <div key={label}>
-              <p className="text-[9px] text-slate-600 uppercase tracking-widest">{label}</p>
-              <p className="text-xs font-semibold text-slate-200 mono truncate">{value}</p>
+            <div key={label} className="bg-black/60 border border-gray-800 p-2">
+              <p className="text-[10px] text-gta-blue font-bold uppercase tracking-widest mb-1">{label}</p>
+              <p className="text-sm font-black text-white truncate">{value}</p>
             </div>
           ))}
         </div>
@@ -243,35 +226,35 @@ export default function NodeInspector({ wallet, onClose }) {
 
       {/* Tags */}
       {wallet.tags && wallet.tags.length > 0 && (
-        <div className="p-4 border-b border-[#1e2847] flex-shrink-0">
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Flags</p>
-          <div className="flex flex-wrap gap-1.5">
+        <div className="p-4 border-b-4 border-black bg-black/60 flex-shrink-0">
+          <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest mb-3">Intelligence Flags</p>
+          <div className="flex flex-wrap gap-2">
             {wallet.tags.map(tag => (
-              <span key={tag} className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${TAG_COLORS[tag] || 'bg-slate-900 text-slate-400'}`}>
-                {tag}
+              <span key={tag} className={`text-xs px-3 py-1 font-bold uppercase tracking-wider shadow-sm ${TAG_COLORS[tag] || 'bg-black text-gray-400 border border-gray-700'}`}>
+                {tag.replace('-', ' ')}
               </span>
             ))}
           </div>
         </div>
       )}
 
-      {/* Risk Factors */}
-      <div className="p-4 flex-1">
-        <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">Risk Factor Breakdown</p>
-        <div className="flex flex-col gap-3">
-          {riskFactors.map(({ label, score, max, color, desc }) => (
+      {/* Risk Factors (GTA Stat Bars) */}
+      <div className="p-4 flex-1 bg-black/80">
+        <p className="text-[12px] text-white font-bold uppercase tracking-widest mb-4">Target Attributes</p>
+        <div className="flex flex-col gap-4">
+          {riskFactors.map(({ label, score, color, desc }) => (
             <div key={label}>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[11px] text-slate-300">{label}</span>
-                <span className="text-[11px] mono font-semibold" style={{ color }}>{score}</span>
+              <div className="flex justify-between items-end mb-1">
+                <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">{label}</span>
+                <span className="text-sm font-black" style={{ color }}>{score}/100</span>
               </div>
-              <div className="h-1.5 bg-dark-700 rounded-full overflow-hidden">
+              <div className="h-3 bg-gray-900 border-2 border-black flex">
                 <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${score}%`, backgroundColor: color, boxShadow: `0 0 6px ${color}60` }}
+                  className="h-full transition-all duration-1000 ease-out"
+                  style={{ width: `${score}%`, backgroundColor: color }}
                 />
               </div>
-              <p className="text-[10px] text-slate-600 mt-0.5">{desc}</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">{desc}</p>
             </div>
           ))}
         </div>
@@ -279,16 +262,16 @@ export default function NodeInspector({ wallet, onClose }) {
 
       {/* Hop distance badge */}
       {wallet.hopDistance !== undefined && (
-        <div className="p-4 border-t border-[#1e2847] flex-shrink-0">
-          <div className="bg-dark-700 rounded-lg p-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-dark-600 border border-[#1e2847] flex items-center justify-center text-sm mono font-bold text-blue-400">
+        <div className="p-4 border-t-4 border-black bg-black flex-shrink-0">
+          <div className="border-2 border-gray-800 p-3 flex items-center gap-4">
+            <div className="w-10 h-10 bg-gta-blue border-2 border-black flex items-center justify-center text-xl font-black text-white drop-shadow-md">
               {wallet.hopDistance}
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-200">
-                {wallet.hopDistance === 0 ? 'Target Wallet' : `${wallet.hopDistance} hop${wallet.hopDistance > 1 ? 's' : ''} from target`}
+              <p className="text-sm font-bold text-white uppercase tracking-widest">
+                {wallet.hopDistance === 0 ? 'Primary Target' : `Degrees of Separation`}
               </p>
-              <p className="text-[10px] text-slate-500">Graph distance in transaction network</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Graph Distance from Origin</p>
             </div>
           </div>
         </div>

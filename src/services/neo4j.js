@@ -42,6 +42,7 @@ export async function fetchWalletGraph(address) {
             label: props.short_address || addr.substring(0, 6),
             type: 'wallet',
             risk: (props.risk_level || 'UNKNOWN').toUpperCase().replace(' RISK', ''),
+            threatSource: props.threat_source || 'Unknown',
             address: addr,
             short: props.short_address || addr.substring(0, 6)
           }
@@ -59,8 +60,10 @@ export async function fetchWalletGraph(address) {
 
     for (let i = 0; i < rels.length; i++) {
       const r = rels[i];
-      // Resolve start and end nodes safely using Neo4j driver element IDs or properties
-      const startResult = await session.run(`MATCH ()-[r:TRANSACTION]->() WHERE elementId(r) = $eid RETURN startNode(r).address AS source, endNode(r).address AS target`, { eid: r.elementId });
+      const startResult = await session.run(
+        `MATCH ()-[r:TRANSACTION]->() WHERE elementId(r) = $eid RETURN startNode(r).address AS source, endNode(r).address AS target`, 
+        { eid: r.elementId }
+      );
       if (startResult.records.length > 0) {
         const src = startResult.records[0].get('source');
         const tgt = startResult.records[0].get('target');
@@ -109,11 +112,9 @@ export async function syncWalletTransactions(address) {
       value: (Number(tx.value) / 1e18).toFixed(4) 
     }));
 
-    // Extract all unique addresses (both sender and receiver) from the transaction set
     const uniqueAddresses = [...new Set(transactions.flatMap(tx => [tx.from, tx.to]))];
     const riskMap = {};
 
-    // Scan security for all associated addresses in parallel batches (chunk size 5 to respect rate limits)
     const batchSize = 5;
     for (let i = 0; i < uniqueAddresses.length; i += batchSize) {
       const batch = uniqueAddresses.slice(i, i + batchSize);
@@ -122,39 +123,44 @@ export async function syncWalletTransactions(address) {
           const riskRes = await fetch(`/goplus/api/v1/address_security/${addr}?chain_id=1`);
           const riskData = await riskRes.json();
           
+          // Trap rate limiting instead of treating as SAFE
+          if (riskData.code === 4029 || riskData.message === 'too many requests' || riskRes.status === 429) {
+            console.warn(`⚠️ GoPlus Rate Limited for ${addr} (code 4029)`);
+            riskMap[addr] = { risk: 'RATE_LIMITED', source: 'GoPlus API (Rate Limited 4029)' };
+            return;
+          }
+
+          let isContract = false;
           let isMalicious = false;
-          if (riskData.result && riskData.result[addr]) {
-            const flags = riskData.result[addr];
+          if (riskData.result) {
+            const flags = riskData.result[addr] || riskData.result[addr.toLowerCase()] || riskData.result;
+            isContract = String(flags.contract_address) === "1";
             
-            // Explicitly check actual security threat keys instead of catching contract_address: "1"
             const threatKeys = [
-              'phishing_activities', 
-              'stealing_attack', 
-              'money_laundering', 
-              'cybercrime', 
-              'financial_crime', 
-              'sanctioned', 
-              'mixer', 
-              'blacklist_doubt', 
-              'honeypot_related_address', 
-              'blackmail_activities',
-              'gas_abuse'
+              'phishing_activities', 'stealing_attack', 'money_laundering', 
+              'cybercrime', 'financial_crime', 'sanctioned', 'mixer', 
+              'blacklist_doubt', 'honeypot_related_address', 'blackmail_activities', 'gas_abuse'
             ];
             
             isMalicious = threatKeys.some(key => String(flags[key]) === "1");
           }
           
-          riskMap[addr] = isMalicious ? 'CRITICAL' : 'SAFE';
+          riskMap[addr] = {
+            risk: isMalicious ? 'CRITICAL' : 'SAFE',
+            isContract: isContract,
+            source: isMalicious ? 'GoPlus Threat Detection' : (isContract ? 'Verified Contract' : 'GoPlus Static Scan')
+          };
         } catch (apiError) {
           console.warn(`GoPlus Risk API failed for ${addr}:`, apiError);
-          riskMap[addr] = 'SAFE';
+          riskMap[addr] = { risk: 'UNKNOWN', source: 'Scan Failed' };
         }
       }));
     }
 
-    // Pass the complete riskMap for all associated addresses into upsert
     await upsertGraphData(transactions, riskMap);
-    console.log(`✅ Synced ${transactions.length} transactions and scanned all associated addresses for ${address} to Neo4j`);
+    await applyDynamicGraphRisk();
+
+    console.log(`✅ Synced ${transactions.length} transactions and mapped dynamic risks for ${address}`);
     
   } catch (error) {
     console.error('Failed to sync blockchain data:', error);
@@ -165,32 +171,87 @@ export async function upsertGraphData(transactions, riskMap = {}) {
   const session = driver.session();
   try {
     for (const tx of transactions) {
-      const fromRisk = riskMap[tx.from] || 'SAFE';
-      const toRisk = riskMap[tx.to] || 'SAFE';
+      const fromEntry = typeof riskMap[tx.from] === 'object' 
+        ? riskMap[tx.from] 
+        : { risk: riskMap[tx.from] || 'UNKNOWN', source: 'Static Scan' };
+
+      const toEntry = typeof riskMap[tx.to] === 'object' 
+        ? riskMap[tx.to] 
+        : { risk: riskMap[tx.to] || 'UNKNOWN', source: 'Static Scan' };
 
       await session.run(
         `MERGE (f:Wallet {address: $from})
-         ON CREATE SET f.short_address = $fromShort, f.risk_level = $fromRisk
-         ON MATCH SET f.risk_level = CASE WHEN $fromRisk = 'CRITICAL' THEN 'CRITICAL' ELSE f.risk_level END
+         ON CREATE SET f.short_address = $fromShort, 
+                       f.risk_level = $fromRisk, 
+                       f.threat_source = $fromSource
+         ON MATCH SET f.risk_level = CASE 
+                        WHEN $fromRisk = 'CRITICAL' THEN 'CRITICAL'
+                        WHEN $fromRisk = 'RATE_LIMITED' AND NOT f.risk_level IN ['CRITICAL', 'HIGH'] THEN 'RATE_LIMITED'
+                        WHEN $fromRisk = 'SAFE' AND f.risk_level IN ['UNKNOWN', 'RATE_LIMITED'] THEN 'SAFE'
+                        ELSE f.risk_level END,
+                      f.threat_source = CASE 
+                        WHEN $fromRisk = 'CRITICAL' THEN $fromSource
+                        WHEN $fromRisk = 'RATE_LIMITED' AND NOT f.risk_level IN ['CRITICAL', 'HIGH'] THEN $fromSource
+                        ELSE f.threat_source END
          
          MERGE (t:Wallet {address: $to})
-         ON CREATE SET t.short_address = $toShort, t.risk_level = $toRisk
-         ON MATCH SET t.risk_level = CASE WHEN $toRisk = 'CRITICAL' THEN 'CRITICAL' ELSE t.risk_level END
+         ON CREATE SET t.short_address = $toShort, 
+                       t.risk_level = $toRisk, 
+                       t.threat_source = $toSource
+         ON MATCH SET t.risk_level = CASE 
+                        WHEN $toRisk = 'CRITICAL' THEN 'CRITICAL'
+                        WHEN $toRisk = 'RATE_LIMITED' AND NOT t.risk_level IN ['CRITICAL', 'HIGH'] THEN 'RATE_LIMITED'
+                        WHEN $toRisk = 'SAFE' AND t.risk_level IN ['UNKNOWN', 'RATE_LIMITED'] THEN 'SAFE'
+                        ELSE t.risk_level END,
+                      t.threat_source = CASE 
+                        WHEN $toRisk = 'CRITICAL' THEN $toSource
+                        WHEN $toRisk = 'RATE_LIMITED' AND NOT t.risk_level IN ['CRITICAL', 'HIGH'] THEN $toSource
+                        ELSE t.threat_source END
          
          MERGE (f)-[r:TRANSACTION {amount: $amount}]->(t)`,
         {
           from: tx.from,
           fromShort: tx.from.substring(0, 6),
-          fromRisk,
+          fromRisk: fromEntry.risk,
+          fromSource: fromEntry.source,
           to: tx.to,
           toShort: tx.to.substring(0, 6),
-          toRisk,
+          toRisk: toEntry.risk,
+          toSource: toEntry.source,
           amount: tx.value
         }
       );
     }
   } catch (error) {
     console.error("Neo4j Ingestion Failed:", error);
+  } finally {
+    await session.close();
+  }
+}
+
+export async function applyDynamicGraphRisk() {
+  const session = driver.session();
+  try {
+    // Escalate risk to MEDIUM (Victim/Exposure tier) if connected to a CRITICAL node.
+    // This prevents innocent victims from being flagged as HIGH/CRITICAL attackers themselves.
+    const query = `
+      MATCH (malicious:Wallet)-[:TRANSACTION]-(target:Wallet)
+      WHERE malicious.risk_level = 'CRITICAL' 
+        AND target.risk_level IN ['SAFE', 'UNKNOWN', 'RATE_LIMITED']
+        AND coalesce(target.is_contract, false) = false
+      SET target.risk_level = 'MEDIUM',
+          target.threat_source = 'Graph Exposure (Transacted with CRITICAL node)'
+      RETURN count(target) AS updatedCount
+    `;
+    
+    const result = await session.run(query);
+    const updatedCount = result.records[0].get('updatedCount').toNumber();
+    
+    if (updatedCount > 0) {
+      console.log(`Dynamically escalated risk to MEDIUM for ${updatedCount} exposed wallets.`);
+    }
+  } catch (error) {
+    console.error("Failed to apply dynamic graph risk:", error);
   } finally {
     await session.close();
   }
@@ -225,6 +286,8 @@ export async function fetchWalletProfile(address) {
         trustScore = Math.min(100, 85 + variance);
       } else if (risk === 'MEDIUM') {
         trustScore = 50 + variance;
+      } else if (risk === 'RATE_LIMITED' || risk === 'UNKNOWN') {
+        trustScore = 50; // Neutral unverified state
       } else {
         trustScore = Math.max(5, 20 + variance);
       }
@@ -235,7 +298,8 @@ export async function fetchWalletProfile(address) {
       address: lowerAddress,
       short: attributes.short_address || lowerAddress.substring(0, 6),
       risk,
-      trustScore
+      trustScore,
+      threatSource: attributes.threat_source || 'Static Scan'
     };
   } catch (error) {
     console.error('Neo4j profile error:', error);
@@ -249,11 +313,11 @@ export async function fetchPresetWallets() {
   const session = driver.session();
   try {
     const result = await session.run(
-      `MATCH (w:Wallet) WHERE w.risk_level IN ['CRITICAL', 'HIGH', 'SAFE'] RETURN w.address AS address, w.risk_level AS risk, w.short_address AS label LIMIT 6`
+      `MATCH (w:Wallet) WHERE w.risk_level IN ['CRITICAL', 'HIGH', 'SAFE', 'RATE_LIMITED'] RETURN w.address AS address, w.risk_level AS risk, w.short_address AS label LIMIT 6`
     );
     return result.records.map(record => ({
       address: record.get('address'),
-      risk: (record.get('risk') || 'SAFE').toUpperCase(),
+      risk: (record.get('risk') || 'UNKNOWN').toUpperCase(),
       label: record.get('label') || record.get('address').substring(0, 6)
     }));
   } catch (error) {
@@ -273,18 +337,21 @@ export async function fetchAIExplanations(address) {
       `MATCH (w:Wallet {address: $address})
        OPTIONAL MATCH (w)-[r:TRANSACTION]-(neighbor:Wallet)
        RETURN w.risk_level AS base_risk, 
+              w.threat_source AS threat_source,
               count(r) AS total_txs, 
               sum(CASE WHEN neighbor.risk_level IN ['CRITICAL', 'HIGH'] THEN 1 ELSE 0 END) AS flagged_txs`,
       { address: lowerAddress }
     );
 
     let base_risk = "UNKNOWN";
+    let threat_source = "Static Scan";
     let total_txs = 0;
     let flagged_txs = 0;
 
     if (result.records.length > 0) {
       const rec = result.records[0];
       base_risk = rec.get('base_risk') || "UNKNOWN";
+      threat_source = rec.get('threat_source') || "Static Scan";
       total_txs = neo4j.isInt(rec.get('total_txs')) ? rec.get('total_txs').toNumber() : Number(rec.get('total_txs') || 0);
       flagged_txs = neo4j.isInt(rec.get('flagged_txs')) ? rec.get('flagged_txs').toNumber() : Number(rec.get('flagged_txs') || 0);
     }
@@ -299,18 +366,17 @@ export async function fetchAIExplanations(address) {
 
     Metrics:
     - Risk Score: ${base_risk}
+    - Threat Origin: ${threat_source}
     - Total Transactions (recent window): ${total_txs}
     - Flagged Transactions: ${flagged_txs}
     - Exposure Ratio: ${riskRatio}%
 
     Important context:
-    - Blockchain explorers like Etherscan may only return recent transactions.
-    - A value of 0 transactions does NOT necessarily mean the wallet is new or inactive.
+    - If Risk Score is RATE_LIMITED, explicitly warn that external security APIs encountered rate limiting (HTTP 429 / Code 4029), meaning direct threat verification was incomplete.
     - Historical malicious activity may not appear in recent transaction counts.
 
     Instructions:
-    - Base your reasoning primarily on flagged transactions and exposure ratio.
-    - Do NOT assume "0 transactions" implies high risk or new wallet.
+    - Base your reasoning primarily on flagged transactions, threat origin, and exposure ratio.
     - Ensure the explanation logically aligns with the given risk score.
 
     Output:
@@ -338,7 +404,7 @@ export async function fetchAIExplanations(address) {
     
     return content.explanations && content.explanations.length > 0 
       ? content.explanations 
-      : ["Analysis complete. No specific threats identified."];
+      : ["Analysis complete. Threat verification status updated."];
 
   } catch (error) {
     console.error('Failed to generate AI explanation with Neo4j:', error);

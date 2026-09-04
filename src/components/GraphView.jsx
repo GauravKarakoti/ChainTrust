@@ -14,10 +14,33 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
       cyRef.current = null 
     }
 
+    // Append custom Cytoscape styling for RATE_LIMITED and UNKNOWN nodes
+    const baseStyles = getCytoscapeStyles()
+    const extendedStyles = [
+      ...baseStyles,
+      {
+        selector: 'node[risk = "RATE_LIMITED"]',
+        style: {
+          'background-color': '#eab308',
+          'border-color': '#ca8a04',
+          'border-width': 2,
+          'text-outline-color': '#000000'
+        }
+      },
+      {
+        selector: 'node[risk = "UNKNOWN"]',
+        style: {
+          'background-color': '#6b7280',
+          'border-color': '#4b5563',
+          'border-width': 2
+        }
+      }
+    ]
+
     const cy = cytoscape({
       container: containerRef.current,
       elements: elements || { nodes: [], edges: [] },
-      style: getCytoscapeStyles(),
+      style: extendedStyles,
       layout: LAYOUT_CONFIG,
       userZoomingEnabled: true,
       userPanningEnabled: true,
@@ -35,7 +58,8 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
         short: data.label || data.id,
         label: data.label || data.id,
         type: data.type || 'wallet',
-        risk: data.risk || 'UNKNOWN'
+        risk: data.risk || 'UNKNOWN',
+        threatSource: data.threatSource || 'Static Scan'
       })
 
       cy.elements().addClass('dimmed')
@@ -107,12 +131,22 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
   const handleZoomOut = () => cyRef.current?.zoom(cyRef.current.zoom() * 0.75)
   const handleFit = () => cyRef.current?.fit(undefined, 30)
 
+  const hasRateLimitedNodes = elements.nodes.some(n => n.data?.risk === 'RATE_LIMITED')
+
   return (
     <div className="relative w-full h-full bg-gta-hudBase rounded-[3rem] overflow-hidden border-4 border-gray-900 shadow-[0_0_20px_rgba(0,0,0,0.9)] font-hud">
       {/* Radar Grid Background */}
       <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
       <div ref={containerRef} className="w-full h-full relative z-10" />
+
+      {/* Rate Limit Warning Banner */}
+      {hasRateLimitedNodes && (
+        <div className="absolute top-16 left-6 z-20 bg-yellow-950/80 border border-yellow-500 text-yellow-300 text-[11px] px-3 py-1.5 rounded flex items-center gap-2 shadow-lg backdrop-blur-sm">
+          <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+          <span>API rate limit reached (Code 4029). Some blips marked unverified.</span>
+        </div>
+      )}
 
       {/* Map Controls */}
       <div className="absolute top-6 right-6 flex flex-col gap-2 z-20">
@@ -128,6 +162,7 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
           {[
             { color: '#ff2a2a', label: 'Hostile Actor' },
             { color: '#f97316', label: 'Wanted Target' },
+            { color: '#eab308', label: 'Rate Limited (4029)' },
             { color: '#54b649', label: 'Safe Contact' },
             { color: '#ffffff', label: 'Player (Target)' },
           ].map(({ color, label }) => (
