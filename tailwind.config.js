@@ -18,7 +18,18 @@ export default {
           red: '#ef4444',
           orange: '#f59e0b',
         },
+        gta: {
+          green: '#54b649', // Money/Mission objective green
+          red: '#ff2a2a',   // Wasted/Critical threat red
+          blue: '#2e86c1',  // System info blue
+          hudBase: 'rgba(0, 0, 0, 0.75)', // Translucent dark HUD
+          star: '#ffffff'   // Wanted star white
+        }
       },
+      fontFamily: {
+        gta: ['Pricedown', 'sans-serif'], // Use for WASTED, BUSTED, and titles
+        hud: ['Chalet', 'ui-sans-serif', 'system-ui'], // Use for readable HUD text
+      }
     },
   },
   plugins: [],

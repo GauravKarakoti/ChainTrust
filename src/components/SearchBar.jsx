@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import { fetchPresetWallets } from '../services/tigergraph'
+import { fetchPresetWallets } from '../services/neo4j'
 
 export default function SearchBar({ onSearch, isLoading }) {
   const [value, setValue] = useState('')
-  const [focused, setFocused] = useState(false)
   const [presets, setPresets] = useState([])
 
   useEffect(() => {
@@ -22,56 +21,46 @@ export default function SearchBar({ onSearch, isLoading }) {
 
   const RISK_DOT = {
     HIGH: 'bg-orange-500',
-    CRITICAL: 'bg-red-500',
-    SAFE: 'bg-emerald-500',
+    CRITICAL: 'bg-gta-red',
+    SAFE: 'bg-gta-green',
     MEDIUM: 'bg-amber-500',
   }
 
   return (
-    <div className="w-full">
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <div className={`flex-1 flex items-center gap-3 bg-dark-800 border rounded-xl px-4 py-2.5 transition-all ${
-          focused ? 'border-blue-600 shadow-lg shadow-blue-900/20' : 'border-[#1e2847]'
-        }`}>
-          <span className="text-slate-500 text-sm">🔍</span>
+    <div className="w-full max-w-3xl mx-auto mt-4 font-hud">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-0 shadow-[0_5px_15px_rgba(0,0,0,0.8)] border-4 border-black">
+        <div className="flex-1 flex items-center gap-3 bg-black/90 px-4 py-3 border-l-8 border-l-gta-green">
+          <span className="text-white text-lg font-bold">M:</span>
           <input
             type="text"
             value={value}
             onChange={e => setValue(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder="Enter wallet address or ENS name..."
-            className="flex-1 bg-transparent outline-none text-sm text-slate-200 placeholder-slate-600 mono"
+            placeholder="ENTER TARGET WALLET ID..."
+            className="flex-1 bg-transparent outline-none text-white text-sm md:text-base uppercase font-bold placeholder-gray-500 tracking-wider"
           />
           {value && (
-            <button type="button" onClick={() => setValue('')} className="text-slate-600 hover:text-slate-400 transition-colors">✕</button>
+            <button type="button" onClick={() => setValue('')} className="text-gray-500 hover:text-white transition-colors font-bold">✕</button>
           )}
         </div>
         <button
           type="submit"
           disabled={isLoading || !value.trim()}
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-dark-700 disabled:text-slate-600 text-white text-sm font-semibold rounded-xl transition-all glow-blue"
+          className="px-8 py-3 bg-white hover:bg-gray-300 disabled:bg-gray-800 disabled:text-gray-600 text-black text-sm md:text-base font-black uppercase tracking-widest transition-all"
         >
-          {isLoading ? (
-            <span className="flex items-center gap-2">
-              <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Scanning
-            </span>
-          ) : 'Analyze'}
+          {isLoading ? 'SCANNING...' : 'TRACK'}
         </button>
       </form>
 
-      {/* Preset buttons */}
       {presets.length > 0 && (
-        <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
-          <span className="text-[10px] text-slate-600 uppercase tracking-widest flex-shrink-0">Quick load:</span>
+        <div className="flex items-center justify-center gap-2 mt-4 flex-wrap bg-black/60 py-2 px-4 border border-black max-w-max mx-auto rounded-sm">
+          <span className="text-[10px] text-white uppercase tracking-widest font-bold flex-shrink-0">Known Targets:</span>
           {presets.map(({ address, risk, label }) => (
             <button
               key={address}
               onClick={() => handlePreset(address)}
-              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-dark-800 hover:bg-dark-700 border border-[#1e2847] hover:border-slate-600 text-slate-400 hover:text-white rounded-lg transition-all"
+              className="flex items-center gap-2 text-[10px] font-bold px-3 py-1 bg-black hover:bg-white text-gray-300 hover:text-black border border-gray-700 uppercase transition-all"
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${RISK_DOT[risk] || 'bg-slate-500'}`} />
+              <span className={`w-2 h-2 rounded-full border border-black ${RISK_DOT[risk] || 'bg-slate-500'}`} />
               {label}
             </button>
           ))}

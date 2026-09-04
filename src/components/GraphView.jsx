@@ -7,7 +7,7 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
   const cyRef = useRef(null)
 
   const initCy = useCallback(() => {
-    if (!containerRef.current) return
+    if (!containerRef.current) return;
 
     if (cyRef.current) {
       cyRef.current.destroy()
@@ -16,7 +16,7 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
 
     const cy = cytoscape({
       container: containerRef.current,
-      elements: elements,
+      elements: elements || { nodes: [], edges: [] },
       style: getCytoscapeStyles(),
       layout: LAYOUT_CONFIG,
       userZoomingEnabled: true,
@@ -38,14 +38,12 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
         risk: data.risk || 'UNKNOWN'
       })
 
-      // Highlight connected
       cy.elements().addClass('dimmed')
       node.removeClass('dimmed')
       node.connectedEdges().removeClass('dimmed')
       node.connectedEdges().connectedNodes().removeClass('dimmed')
     })
 
-    // Background click — reset
     cy.on('tap', (evt) => {
       if (evt.target === cy) {
         cy.elements().removeClass('dimmed').removeClass('highlighted')
@@ -53,10 +51,8 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
       }
     })
 
-    // Hover tooltip
     cy.on('mouseover', 'node', (evt) => {
-      const node = evt.target
-      node.addClass('highlighted')
+      evt.target.addClass('highlighted')
     })
     cy.on('mouseout', 'node', (evt) => {
       evt.target.removeClass('highlighted')
@@ -94,10 +90,8 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
 
     cy.batch(() => {
       if (filter === 'ALL') {
-        // Show all nodes
         cy.nodes().style('display', 'element')
       } else {
-        // Show only nodes matching the risk filter, hide others
         cy.nodes().forEach(node => {
           if (node.data('risk') === filter) {
             node.style('display', 'element')
@@ -114,67 +108,51 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
   const handleFit = () => cyRef.current?.fit(undefined, 30)
 
   return (
-    <div className="relative w-full h-full bg-dark-800 rounded-xl overflow-hidden border border-[#1e2847]">
-      {/* Graph container */}
-      <div ref={containerRef} className="w-full h-full" />
+    <div className="relative w-full h-full bg-gta-hudBase rounded-[3rem] overflow-hidden border-4 border-gray-900 shadow-[0_0_20px_rgba(0,0,0,0.9)] font-hud">
+      {/* Radar Grid Background */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
-      {/* Controls */}
-      <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
-        <button onClick={handleZoomIn}
-          className="w-8 h-8 bg-dark-700 hover:bg-dark-600 border border-[#1e2847] rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center text-sm font-bold">+</button>
-        <button onClick={handleZoomOut}
-          className="w-8 h-8 bg-dark-700 hover:bg-dark-600 border border-[#1e2847] rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center text-sm font-bold">-</button>
-        <button onClick={handleFit}
-          className="w-8 h-8 bg-dark-700 hover:bg-dark-600 border border-[#1e2847] rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center text-xs">⊡</button>
+      <div ref={containerRef} className="w-full h-full relative z-10" />
+
+      {/* Map Controls */}
+      <div className="absolute top-6 right-6 flex flex-col gap-2 z-20">
+        <button onClick={handleZoomIn} className="w-10 h-10 bg-black/80 hover:bg-white text-white hover:text-black border-2 border-gray-700 hover:border-black rounded-full transition-all text-xl font-bold flex items-center justify-center shadow-lg">+</button>
+        <button onClick={handleZoomOut} className="w-10 h-10 bg-black/80 hover:bg-white text-white hover:text-black border-2 border-gray-700 hover:border-black rounded-full transition-all text-xl font-bold flex items-center justify-center shadow-lg">-</button>
+        <button onClick={handleFit} className="w-10 h-10 bg-black/80 hover:bg-white text-white hover:text-black border-2 border-gray-700 hover:border-black rounded-full transition-all text-sm font-bold flex items-center justify-center shadow-lg uppercase">Fit</button>
       </div>
 
-      {/* Legend */}
-      <div className="absolute bottom-3 left-3 bg-dark-900/80 backdrop-blur-sm border border-[#1e2847] rounded-lg p-3 z-10">
-        <p className="text-[10px] text-slate-500 mb-2 uppercase tracking-widest font-semibold">Legend</p>
-        <div className="flex flex-col gap-1.5">
+      {/* Radar Legend */}
+      <div className="absolute bottom-6 left-6 bg-black/90 border-2 border-gray-800 p-3 z-20 rounded-md">
+        <p className="text-[12px] text-white mb-2 font-gta tracking-widest" style={{ WebkitTextStroke: '0.5px black' }}>RADAR BLIPS</p>
+        <div className="flex flex-col gap-2">
           {[
-            { color: '#ef4444', label: 'Critical Risk' },
-            { color: '#f97316', label: 'High Risk' },
-            { color: '#22c55e', label: 'Safe' },
-            { color: '#3b82f6', label: 'Target Wallet' },
+            { color: '#ff2a2a', label: 'Hostile Actor' },
+            { color: '#f97316', label: 'Wanted Target' },
+            { color: '#54b649', label: 'Safe Contact' },
+            { color: '#ffffff', label: 'Player (Target)' },
           ].map(({ color, label }) => (
             <div key={label} className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full border-2 flex-shrink-0" style={{ borderColor: color, backgroundColor: color + '30' }} />
-              <span className="text-[10px] text-slate-400">{label}</span>
+              <div className="w-3 h-3 rounded-full border border-black shadow-[0_0_5px_currentColor]" style={{ backgroundColor: color, color: color }} />
+              <span className="text-[10px] text-gray-300 font-bold uppercase">{label}</span>
             </div>
           ))}
-          <div className="mt-1 pt-1.5 border-t border-[#1e2847] flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-blue-500" />
-              <span className="text-[10px] text-slate-400">SENT_TO</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-purple-500 border-dashed border-b" />
-              <span className="text-[10px] text-slate-400">SWAPPED</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-cyan-500" />
-              <span className="text-[10px] text-slate-400">INTERACTED</span>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Node count badge */}
-      <div className="absolute top-3 left-3 bg-dark-900/80 backdrop-blur-sm border border-[#1e2847] rounded-lg px-3 py-1.5 z-10 flex gap-3">
-        <span className="text-[10px] text-slate-400">
-          <span className="text-white font-semibold mono">{elements.nodes.length}</span> nodes
+      {/* Target Info */}
+      <div className="absolute top-6 left-6 bg-black/90 border-2 border-gray-800 px-4 py-2 z-20 flex gap-4 rounded-md">
+        <span className="text-xs text-gray-400 font-bold uppercase">
+          Entities: <span className="text-gta-green">{elements.nodes.length}</span>
         </span>
-        <span className="text-[10px] text-slate-400">
-          <span className="text-white font-semibold mono">{elements.edges.length}</span> edges
+        <span className="text-xs text-gray-400 font-bold uppercase">
+          Links: <span className="text-gta-green">{elements.edges.length}</span>
         </span>
       </div>
 
-      {/* Instructions */}
       {!selectedNode && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center opacity-40">
-            <p className="text-sm text-slate-400">Click any node to inspect</p>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <div className="bg-black/80 px-6 py-2 border-2 border-gray-800 rounded-sm">
+            <p className="text-sm text-white font-bold uppercase tracking-widest">Select target to track</p>
           </div>
         </div>
       )}

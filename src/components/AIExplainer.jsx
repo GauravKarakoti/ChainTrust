@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { fetchAIExplanations } from '../services/tigergraph'
+import { fetchAIExplanations } from '../services/neo4j'
 
 function parseMarkdown(text) {
   return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-white">$1</strong>')

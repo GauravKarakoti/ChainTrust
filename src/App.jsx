@@ -5,8 +5,8 @@ import AIExplainer from './components/AIExplainer'
 import AlertsPanel from './components/AlertsPanel'
 import SearchBar from './components/SearchBar'
 import TrustScoreRing from './components/TrustScoreRing'
-import { fetchWalletGraph, fetchWalletProfile, syncWalletTransactions } from './services/tigergraph'
-import TigerGraphWorkspace from './components/TigerGraphWorkspace'
+import { fetchWalletGraph, fetchWalletProfile, syncWalletTransactions } from './services/neo4j'
+import Neo4jWorkspace from './components/Neo4jWorkspace'
 
 const FILTER_OPTIONS = ['ALL', 'CRITICAL', 'HIGH', 'SAFE']
 
@@ -18,7 +18,7 @@ export default function App() {
   const [searchedAddress, setSearchedAddress] = useState('')
   const [graphKey, setGraphKey] = useState(0)
   
-  // NEW: State for TigerGraph data
+  // NEW: State for data
   const [graphElements, setGraphElements] = useState({ nodes: [], edges: [] })
   const [targetProfile, setTargetProfile] = useState({})
   
@@ -77,7 +77,7 @@ export default function App() {
       setTargetProfile(mergedProfile || {})
       setSelectedNode(mergedProfile || null)
     } catch (error) {
-      console.error("Failed to fetch TigerGraph data:", error)
+      console.error("Failed to fetch Neo4j data:", error)
       setGraphElements({ nodes: [], edges: [] })
       setTargetProfile({})
     } finally {
@@ -116,7 +116,7 @@ export default function App() {
 
           {/* Status Indicators: Visible and compact on mobile */}
           <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-            <TigerGraphWorkspace />
+            <Neo4jWorkspace />
             <div className="hidden sm:flex items-center gap-1.5 text-[10px] md:text-[11px] text-blue-400">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
               ETH
@@ -178,7 +178,7 @@ export default function App() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold text-slate-300">Scanning transaction graph...</p>
-                  <p className="text-[11px] text-slate-600 mt-1">Traversing TigerGraph · 3-hop analysis</p>
+                  <p className="text-[11px] text-slate-600 mt-1">Traversing Neo4j · 3-hop analysis</p>
                 </div>
                 <div className="flex gap-1.5">
                   {['Wallet nodes', 'Edge traversal', 'Risk scoring', 'AI analysis'].map((step, i) => (

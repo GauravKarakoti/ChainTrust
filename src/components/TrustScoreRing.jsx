@@ -1,67 +1,53 @@
 export default function TrustScoreRing({ score, risk, size = 120 }) {
-  const radius = (size - 16) / 2
-  const circumference = 2 * Math.PI * radius
-  const filled = (score / 100) * circumference
-  const gap = circumference - filled
+  // Convert 0-100 score to a 0-5 wanted level (inverted: low score = high wanted level)
+  const wantedLevel = Math.max(0, 5 - Math.floor(score / 20))
+  const isMaxWanted = wantedLevel === 5
 
   const riskColors = {
-    CRITICAL: '#ef4444',
-    HIGH: '#f97316',
-    MEDIUM: '#f59e0b',
-    LOW: '#22c55e',
-    SAFE: '#10b981',
-    UNKNOWN: '#64748b',
+    CRITICAL: 'text-gta-red',
+    HIGH: 'text-orange-500',
+    MEDIUM: 'text-amber-500',
+    LOW: 'text-slate-400',
+    SAFE: 'text-gta-green',
+    UNKNOWN: 'text-slate-500',
   }
 
-  const color = riskColors[risk] || '#64748b'
-
   const getLabel = (s) => {
-    if (s >= 80) return 'SAFE'
-    if (s >= 60) return 'LOW RISK'
-    if (s >= 40) return 'MEDIUM'
-    if (s >= 20) return 'HIGH RISK'
-    return 'CRITICAL'
+    if (s >= 80) return 'CLEAN RECORD'
+    if (s >= 60) return 'SUSPICIOUS'
+    if (s >= 40) return 'WANTED'
+    if (s >= 20) return 'HIGHLY DANGEROUS'
+    return 'PUBLIC ENEMY'
   }
 
   return (
-    <>
-      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="absolute inset-0">
-          {/* Background ring */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="#1e2847"
-            strokeWidth="8"
-          />
-          {/* Score ring */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth="8"
-            strokeDasharray={`${filled} ${gap}`}
-            strokeLinecap="round"
-            className="score-ring"
-            style={{
-              filter: `drop-shadow(0 0 6px ${color}60)`,
-              transition: 'stroke-dasharray 0.8s ease',
-            }}
-          />
-        </svg>
-        <div className="text-center z-10">
-          <div className="font-bold mono leading-none" style={{ fontSize: size * 0.22, color }}>
-            {score}
-          </div>
-        </div>
+    <div className="flex flex-col items-end">
+      {/* Wanted Stars */}
+      <div className={`flex gap-1 ${isMaxWanted ? 'animate-pulse' : ''}`}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <svg 
+            key={star}
+            width={size / 5} 
+            height={size / 5} 
+            viewBox="0 0 24 24" 
+            className={`drop-shadow-md transition-all duration-500 ${
+              star <= wantedLevel 
+                ? 'fill-white stroke-black stroke-[1.5px]' 
+                : 'fill-transparent stroke-white/30 stroke-1'
+            }`}
+          >
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+        ))}
       </div>
-      <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-0.5">
+      
+      {/* Risk Label */}
+      <div className={`font-gta text-2xl tracking-widest mt-2 ${riskColors[risk] || 'text-white'} ${isMaxWanted ? 'animate-bounce' : ''}`} style={{ WebkitTextStroke: '1px black' }}>
         {getLabel(score)}
       </div>
-    </>
+      <div className="text-[10px] font-hud text-slate-400 uppercase tracking-widest bg-gta-hudBase px-2 py-0.5 rounded mt-1 border border-slate-700">
+        Score: {score}/100
+      </div>
+    </div>
   )
 }
