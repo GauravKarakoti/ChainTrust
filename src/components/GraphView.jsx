@@ -8,13 +8,11 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
 
   const initCy = useCallback(() => {
     if (!containerRef.current) return;
-
     if (cyRef.current) {
       cyRef.current.destroy()
       cyRef.current = null 
     }
 
-    // Append custom Cytoscape styling for RATE_LIMITED and UNKNOWN nodes
     const baseStyles = getCytoscapeStyles()
     const extendedStyles = [
       ...baseStyles,
@@ -30,8 +28,8 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
       {
         selector: 'node[risk = "UNKNOWN"]',
         style: {
-          'background-color': '#6b7280',
-          'border-color': '#4b5563',
+          'background-color': '#5b21b6', // Spooky purple instead of gray
+          'border-color': '#4c1d95',
           'border-width': 2
         }
       }
@@ -134,36 +132,31 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
   const hasRateLimitedNodes = elements.nodes.some(n => n.data?.risk === 'RATE_LIMITED')
 
   return (
-    <div className="relative w-full h-full bg-gta-hudBase rounded-[3rem] overflow-hidden border-4 border-gray-900 shadow-[0_0_20px_rgba(0,0,0,0.9)] font-hud">
-      {/* Radar Grid Background */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-
+    <div className="relative w-full h-full bg-gta-hudBase rounded-[3rem] overflow-hidden border-4 border-gta-purple shadow-[0_0_20px_rgba(91,33,182,0.6)] font-hud">
+      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#FF7518 1px, transparent 1px), linear-gradient(90deg, #FF7518 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       <div ref={containerRef} className="w-full h-full relative z-10" />
 
-      {/* Rate Limit Warning Banner */}
       {hasRateLimitedNodes && (
-        <div className="absolute top-16 left-6 z-20 bg-yellow-950/80 border border-yellow-500 text-yellow-300 text-[11px] px-3 py-1.5 rounded flex items-center gap-2 shadow-lg backdrop-blur-sm">
-          <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-          <span>API rate limit reached (Code 4029). Some blips marked unverified.</span>
+        <div className="absolute top-16 left-6 z-20 bg-black/80 border border-gta-orange text-gta-orange text-[11px] px-3 py-1.5 rounded flex items-center gap-2 shadow-lg backdrop-blur-sm">
+          <span className="inline-block w-2 h-2 rounded-full bg-gta-orange animate-pulse" />
+          <span>API rate limit (Code 666). Some blips unverified.</span>
         </div>
       )}
 
-      {/* Map Controls */}
       <div className="absolute top-6 right-6 flex flex-col gap-2 z-20">
-        <button onClick={handleZoomIn} className="w-10 h-10 bg-black/80 hover:bg-white text-white hover:text-black border-2 border-gray-700 hover:border-black rounded-full transition-all text-xl font-bold flex items-center justify-center shadow-lg">+</button>
-        <button onClick={handleZoomOut} className="w-10 h-10 bg-black/80 hover:bg-white text-white hover:text-black border-2 border-gray-700 hover:border-black rounded-full transition-all text-xl font-bold flex items-center justify-center shadow-lg">-</button>
-        <button onClick={handleFit} className="w-10 h-10 bg-black/80 hover:bg-white text-white hover:text-black border-2 border-gray-700 hover:border-black rounded-full transition-all text-sm font-bold flex items-center justify-center shadow-lg uppercase">Fit</button>
+        <button onClick={handleZoomIn} className="w-10 h-10 bg-black/80 hover:bg-gta-orange text-white hover:text-black border-2 border-gta-orange hover:border-black rounded-full transition-all text-xl font-bold flex items-center justify-center shadow-lg">+</button>
+        <button onClick={handleZoomOut} className="w-10 h-10 bg-black/80 hover:bg-gta-orange text-white hover:text-black border-2 border-gta-orange hover:border-black rounded-full transition-all text-xl font-bold flex items-center justify-center shadow-lg">-</button>
+        <button onClick={handleFit} className="w-10 h-10 bg-black/80 hover:bg-gta-orange text-white hover:text-black border-2 border-gta-orange hover:border-black rounded-full transition-all text-sm font-bold flex items-center justify-center shadow-lg uppercase">Fit</button>
       </div>
 
-      {/* Radar Legend */}
-      <div className="absolute bottom-6 left-6 bg-black/90 border-2 border-gray-800 p-3 z-20 rounded-md">
-        <p className="text-[12px] text-white mb-2 font-gta tracking-widest" style={{ WebkitTextStroke: '0.5px black' }}>RADAR BLIPS</p>
+      <div className="absolute bottom-6 left-6 bg-black/90 border-2 border-gta-purple p-3 z-20 rounded-md">
+        <p className="text-[12px] text-gta-orange mb-2 font-gta tracking-widest" style={{ WebkitTextStroke: '0.5px black' }}>UNDERWORLD RADAR</p>
         <div className="flex flex-col gap-2">
           {[
-            { color: '#ff2a2a', label: 'Hostile Actor' },
-            { color: '#f97316', label: 'Wanted Target' },
-            { color: '#eab308', label: 'Rate Limited (4029)' },
-            { color: '#54b649', label: 'Safe Contact' },
+            { color: '#8A0303', label: 'Demonic Entity' },
+            { color: '#FF7518', label: 'Cursed Target' },
+            { color: '#eab308', label: 'Hexed (Rate Limited)' },
+            { color: '#39FF14', label: 'Innocent Mortal' },
             { color: '#ffffff', label: 'Player (Target)' },
           ].map(({ color, label }) => (
             <div key={label} className="flex items-center gap-2">
@@ -174,20 +167,19 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
         </div>
       </div>
 
-      {/* Target Info */}
-      <div className="absolute top-6 left-6 bg-black/90 border-2 border-gray-800 px-4 py-2 z-20 flex gap-4 rounded-md">
+      <div className="absolute top-6 left-6 bg-black/90 border-2 border-gta-purple px-4 py-2 z-20 flex gap-4 rounded-md shadow-[0_0_10px_rgba(91,33,182,0.5)]">
         <span className="text-xs text-gray-400 font-bold uppercase">
-          Entities: <span className="text-gta-green">{elements.nodes.length}</span>
+          Souls: <span className="text-gta-orange">{elements.nodes.length}</span>
         </span>
         <span className="text-xs text-gray-400 font-bold uppercase">
-          Links: <span className="text-gta-green">{elements.edges.length}</span>
+          Links: <span className="text-gta-orange">{elements.edges.length}</span>
         </span>
       </div>
 
       {!selectedNode && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <div className="bg-black/80 px-6 py-2 border-2 border-gray-800 rounded-sm">
-            <p className="text-sm text-white font-bold uppercase tracking-widest">Select target to track</p>
+          <div className="bg-black/90 px-6 py-2 border-2 border-gta-orange rounded-sm shadow-[0_0_15px_rgba(255,117,24,0.5)]">
+            <p className="text-sm text-gta-orange font-bold uppercase tracking-widest">Select soul to hunt</p>
           </div>
         </div>
       )}

@@ -10,17 +10,14 @@ import Neo4jWorkspace from './components/Neo4jWorkspace'
 const FILTER_OPTIONS = ['ALL', 'CRITICAL', 'HIGH', 'SAFE']
 
 export default function App() {
-  const [selectedNode, setSelectedNode] = useState(null)
+const [selectedNode, setSelectedNode] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [graphFilter, setGraphFilter] = useState('ALL')
   const [activeTab, setActiveTab] = useState('inspector') 
   const [searchedAddress, setSearchedAddress] = useState('')
   const [graphKey, setGraphKey] = useState(0)
-  
   const [graphElements, setGraphElements] = useState({ nodes: [], edges: [] })
   const [targetProfile, setTargetProfile] = useState({})
-  
-  const [isAlertsExpanded, setIsAlertsExpanded] = useState(false)
 
   const handleNodeSelect = useCallback(async (nodeData) => {
     if (!nodeData) {
@@ -92,8 +89,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col font-hud bg-transparent">
-      {/* Header */}
-      <header className="flex-shrink-0 border-b-4 border-black bg-black/95 sticky top-0 z-50">
+      <header className="flex-shrink-0 border-b-4 border-gta-purple bg-[#0c0a15] sticky top-0 z-50 shadow-[0_4px_20px_rgba(91,33,182,0.6)]">
         <div className="max-w-[1600px] mx-auto px-4 h-16 md:h-24 flex items-center justify-between gap-2 md:gap-4">
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
             <img 
@@ -101,40 +97,36 @@ export default function App() {
               alt="ChainTrust Logo" 
               className="w-10 md:h-12 object-contain drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]" 
             />
-            <span className="text-xl md:text-3xl font-gta text-white tracking-widest drop-shadow-md" style={{ WebkitTextStroke: '1px black' }}>
+            <span className="text-xl md:text-3xl font-gta text-gta-orange tracking-widest drop-shadow-[0_0_10px_rgba(255,117,24,0.8)]" style={{ WebkitTextStroke: '1.5px black' }}>
               CHAINTRUST
             </span>
           </div>
 
-          {/* Desktop Search */}
           <div className="flex-1 max-w-2xl mx-auto hidden md:block">
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
           </div>
 
-          {/* Status Indicators */}
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
             <Neo4jWorkspace />
-            <div className="hidden sm:flex items-center gap-2 text-[12px] font-black text-gta-green bg-black border-2 border-gray-700 px-3 py-1 uppercase tracking-widest shadow-inner">
-              <span className="w-2 h-2 border border-black bg-gta-green animate-pulse" />
+            <div className="hidden sm:flex items-center gap-2 text-[12px] font-black text-gta-orange bg-black border-2 border-gta-orange px-3 py-1 uppercase tracking-widest shadow-[0_0_10px_rgba(255,117,24,0.4)]">
+              <span className="w-2 h-2 border border-black bg-gta-orange animate-pulse" />
               ETH
             </div>
           </div>
         </div>
       </header>
 
-      {/* Mobile Search Bar */}
-      <div className="md:hidden p-3 border-b-4 border-black bg-black/90">
+      <div className="md:hidden p-3 border-b-4 border-black bg-[#0c0a15]">
         <SearchBar onSearch={handleSearch} isLoading={isLoading} />
       </div>
 
-      {/* Sub-header (Target Status) */}
-      <div className="flex-shrink-0 border-b-4 border-black bg-black/80 backdrop-blur-sm">
+      <div className="flex-shrink-0 border-b-4 border-black bg-black/90 backdrop-blur-sm">
         <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-center gap-4">
           <div className="flex items-center gap-4 min-w-0">
             <div className="text-left min-w-0">
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Active Target</p>
+              <p className="text-[10px] text-gta-purple uppercase font-bold tracking-widest mb-1">Tracked Soul</p>
               <p className="text-[12px] md:text-sm font-black text-white uppercase tracking-widest truncate max-w-[150px] md:max-w-[300px]">
-                {searchedAddress || 'NO TARGET ACQUIRED'}
+                {searchedAddress || 'NO SOUL ACQUIRED'}
               </p>
             </div>
           </div>
@@ -146,12 +138,9 @@ export default function App() {
 
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-6 flex flex-col md:flex-row gap-6 min-h-0">
         
-        {/* Left Side: Graph Area */}
         <div className="flex-1 flex flex-col gap-4 min-w-0">
-          
-          {/* Radar Filters */}
-          <div className="flex items-center gap-4 flex-wrap bg-black/60 p-3 border-2 border-gray-800">
-            <span className="text-[11px] text-gray-400 uppercase font-bold tracking-widest">Radar Filters:</span>
+          <div className="flex items-center gap-4 flex-wrap bg-black/80 p-3 border-2 border-gta-purple shadow-inner">
+            <span className="text-[11px] text-gta-orange uppercase font-bold tracking-widest">Spectral Filters:</span>
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {FILTER_OPTIONS.map(f => (
                 <button
@@ -159,8 +148,8 @@ export default function App() {
                   onClick={() => setGraphFilter(f === graphFilter ? 'ALL' : f)}
                   className={`text-[11px] px-4 py-1.5 border-2 font-bold uppercase tracking-widest transition-all whitespace-nowrap shadow-sm ${
                     graphFilter === f
-                      ? 'bg-white border-white text-black'
-                      : 'bg-black border-gray-700 text-gray-400 hover:border-gray-400 hover:text-white'
+                      ? 'bg-gta-orange border-gta-orange text-black'
+                      : 'bg-black border-gta-purple text-gta-purple hover:border-gta-orange hover:text-white'
                   }`}
                 >
                   {f}
@@ -169,22 +158,21 @@ export default function App() {
             </div>
           </div>
 
-          {/* Graph Container */}
           <div className="h-[450px] md:h-full md:flex-1 relative">
             {isLoading ? (
-              <div className="w-full h-full bg-gta-hudBase border-4 border-black flex flex-col items-center justify-center gap-8 shadow-[0_0_20px_rgba(0,0,0,0.8)] relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(0, 255, 0, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 0, 0.2) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+              <div className="w-full h-full bg-gta-hudBase border-4 border-gta-purple flex flex-col items-center justify-center gap-8 shadow-[0_0_20px_rgba(91,33,182,0.8)] relative overflow-hidden">
+                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255, 117, 24, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 117, 24, 0.2) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                 
                 <div className="text-center relative z-10">
-                  <h2 className="font-gta text-5xl text-white tracking-widest animate-pulse drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ WebkitTextStroke: '2px black' }}>SCANNING</h2>
-                  <p className="text-xs text-gta-green font-bold uppercase tracking-widest mt-3 bg-black px-4 py-1 border border-gta-green inline-block">Traversing Network · 3-Hop Radius</p>
+                  <h2 className="font-gta text-5xl text-gta-orange tracking-widest animate-pulse drop-shadow-[0_0_15px_rgba(255,117,24,0.8)]" style={{ WebkitTextStroke: '2px black' }}>CONJURING</h2>
+                  <p className="text-xs text-gta-purple font-bold uppercase tracking-widest mt-3 bg-black px-4 py-1 border border-gta-purple inline-block">Traversing Underworld · 3-Hop Radius</p>
                 </div>
                 
-                <div className="flex flex-col gap-3 w-72 relative z-10 bg-black/80 p-4 border-2 border-gray-800">
-                  {['Locating Subject', 'Tracing Connections', 'Assessing Threat Levels', 'Running Profiler'].map((step, i) => (
+                <div className="flex flex-col gap-3 w-72 relative z-10 bg-black/90 p-4 border-2 border-gta-purple">
+                  {['Locating Spirit', 'Tracing Curses', 'Assessing Demonic Threat', 'Running Oracle'].map((step, i) => (
                     <div key={step} className="flex items-center justify-between border-b-2 border-gray-900 pb-2">
                       <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{step}</span>
-                      <div className="w-3 h-3 border border-black bg-gta-green animate-ping" style={{ animationDelay: `${i * 0.2}s` }} />
+                      <div className="w-3 h-3 border border-black bg-gta-orange animate-ping" style={{ animationDelay: `${i * 0.2}s` }} />
                     </div>
                   ))}
                 </div>
@@ -201,20 +189,19 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Side: Tabbed Inspector */}
         <div className="w-full md:w-[400px] flex-shrink-0 flex flex-col gap-4">
-          <div className="flex gap-2 bg-black border-4 border-black p-1 flex-shrink-0 shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+          <div className="flex gap-2 bg-black border-4 border-gta-purple p-1 flex-shrink-0 shadow-[0_0_15px_rgba(91,33,182,0.5)]">
             {[
-              { id: 'inspector', label: 'TARGET INFO' },
-              { id: 'ai', label: 'FIB DOSSIER' },
+              { id: 'inspector', label: 'SOUL STATS' },
+              { id: 'ai', label: 'CURSED DOSSIER' },
             ].map(({ id, label }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
                 className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest transition-all border-2 ${
                   activeTab === id 
-                    ? 'bg-white text-black border-white' 
-                    : 'bg-gray-900 text-gray-500 hover:text-white border-gray-800 hover:border-gray-500'
+                    ? 'bg-gta-orange text-black border-gta-orange' 
+                    : 'bg-gray-900 text-gta-purple hover:text-white border-gta-purple hover:border-gta-orange'
                 }`}
               >
                 {label}

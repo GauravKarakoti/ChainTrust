@@ -1,28 +1,26 @@
 export default function TrustScoreRing({ score, risk, size = 120 }) {
-  // Convert 0-100 score to a 0-5 wanted level (inverted: low score = high wanted level)
   const wantedLevel = Math.max(0, 5 - Math.floor(score / 20))
   const isMaxWanted = wantedLevel === 5
 
   const riskColors = {
     CRITICAL: 'text-gta-red',
-    HIGH: 'text-orange-500',
+    HIGH: 'text-gta-orange',
     MEDIUM: 'text-amber-500',
     LOW: 'text-slate-400',
     SAFE: 'text-gta-green',
-    UNKNOWN: 'text-slate-500',
+    UNKNOWN: 'text-gta-purple',
   }
 
   const getLabel = (s) => {
-    if (s >= 80) return 'CLEAN RECORD'
-    if (s >= 60) return 'SUSPICIOUS'
-    if (s >= 40) return 'WANTED'
-    if (s >= 20) return 'HIGHLY DANGEROUS'
-    return 'PUBLIC ENEMY'
+    if (s >= 80) return 'MORTAL (CLEAN)'
+    if (s >= 60) return 'SPOOKED'
+    if (s >= 40) return 'CURSED'
+    if (s >= 20) return 'POSSESSED'
+    return 'SOUL REAPER'
   }
 
   return (
     <div className="flex flex-col items-end">
-      {/* Wanted Stars */}
       <div className={`flex gap-1 ${isMaxWanted ? 'animate-pulse' : ''}`}>
         {[1, 2, 3, 4, 5].map((star) => (
           <svg 
@@ -30,9 +28,9 @@ export default function TrustScoreRing({ score, risk, size = 120 }) {
             width={size / 5} 
             height={size / 5} 
             viewBox="0 0 24 24" 
-            className={`drop-shadow-md transition-all duration-500 ${
+            className={`drop-shadow-[0_0_8px_rgba(255,117,24,0.8)] transition-all duration-500 ${
               star <= wantedLevel 
-                ? 'fill-white stroke-black stroke-[1.5px]' 
+                ? 'fill-gta-orange stroke-black stroke-[1.5px]' 
                 : 'fill-transparent stroke-white/30 stroke-1'
             }`}
           >
@@ -41,12 +39,11 @@ export default function TrustScoreRing({ score, risk, size = 120 }) {
         ))}
       </div>
       
-      {/* Risk Label */}
       <div className={`font-gta text-2xl tracking-widest mt-2 ${riskColors[risk] || 'text-white'} ${isMaxWanted ? 'animate-bounce' : ''}`} style={{ WebkitTextStroke: '1px black' }}>
         {getLabel(score)}
       </div>
-      <div className="text-[10px] font-hud text-slate-400 uppercase tracking-widest bg-gta-hudBase px-2 py-0.5 rounded mt-1 border border-slate-700">
-        Score: {score}/100
+      <div className="text-[10px] font-hud text-slate-400 uppercase tracking-widest bg-gta-hudBase px-2 py-0.5 rounded mt-1 border border-gta-purple">
+        Curse Level: {score}/100
       </div>
     </div>
   )

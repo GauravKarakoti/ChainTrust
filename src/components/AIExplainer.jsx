@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { fetchAIExplanations } from '../services/neo4j'
 
 function parseMarkdown(text) {
-  return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-gta-green">$1</strong>')
+  return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-gta-orange">$1</strong>')
 }
 
 export default function AIExplainer({ wallet }) {
@@ -31,7 +31,6 @@ export default function AIExplainer({ wallet }) {
 
   useEffect(() => {
     if (!wallet) return;
-    
     let isMounted = true;
     
     async function loadExplanations() {
@@ -39,11 +38,10 @@ export default function AIExplainer({ wallet }) {
       if (!isMounted) return;
       setExplanations(data);
       setExplanationIndex(0);
-      typeText(data[0] || "Analysis complete. Review wallet flags.");
+      typeText(data[0] || "Seance complete. Review supernatural flags.");
     }
     
     loadExplanations();
-    
     return () => {
       isMounted = false;
       if (timerRef.current) clearInterval(timerRef.current);
@@ -65,7 +63,7 @@ export default function AIExplainer({ wallet }) {
 
   const riskColorClass = {
     CRITICAL: 'text-gta-red',
-    HIGH: 'text-orange-500',
+    HIGH: 'text-gta-orange',
     MEDIUM: 'text-amber-500',
     LOW: 'text-slate-300',
     SAFE: 'text-gta-green',
@@ -76,10 +74,10 @@ export default function AIExplainer({ wallet }) {
       <div className="bg-gta-hudBase border-4 border-black shadow-[0_0_15px_rgba(0,0,0,0.8)] p-5 h-full flex flex-col font-hud">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-3 h-3 border border-black bg-gray-500 animate-pulse" />
-          <h3 className="text-2xl font-gta text-white tracking-widest" style={{ WebkitTextStroke: '1px black' }}>FIB DOSSIER</h3>
+          <h3 className="text-2xl font-gta text-white tracking-widest" style={{ WebkitTextStroke: '1px black' }}>CURSED DOSSIER</h3>
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-gray-400 text-lg font-bold uppercase tracking-widest">No target selected</p>
+          <p className="text-gray-400 text-lg font-bold uppercase tracking-widest">No Soul Tracked</p>
         </div>
       </div>
     )
@@ -87,16 +85,14 @@ export default function AIExplainer({ wallet }) {
 
   return (
     <div className="bg-gta-hudBase border-4 border-black shadow-[0_0_15px_rgba(0,0,0,0.8)] p-5 flex flex-col h-full font-hud">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-4 flex-shrink-0 border-b-4 border-black pb-3">
         <div className={`w-4 h-4 border-2 border-black ${isTyping ? 'animate-pulse bg-gta-red' : 'bg-gta-green'}`} />
-        <h3 className="text-2xl font-gta text-white tracking-widest" style={{ WebkitTextStroke: '1px black' }}>LCPD PROFILER</h3>
-        <span className="ml-auto text-[10px] bg-black text-white font-bold border-2 border-gray-700 px-2 py-1 uppercase tracking-widest">Network: Groq</span>
+        <h3 className="text-2xl font-gta text-white tracking-widest" style={{ WebkitTextStroke: '1px black' }}>UNDEAD TRACKER</h3>
+        <span className="ml-auto text-[10px] bg-black text-white font-bold border-2 border-gta-purple px-2 py-1 uppercase tracking-widest">Oracle: Groq</span>
       </div>
 
-      {/* Wallet context */}
-      <div className="bg-black/60 border-2 border-gray-800 p-3 mb-4 flex items-center gap-4 flex-shrink-0">
-        <div className="w-10 h-10 bg-gray-900 border-2 border-black shadow-[0_0_5px_rgba(255,255,255,0.3)] flex items-center justify-center text-lg text-white font-bold">
+      <div className="bg-black/80 border-2 border-gta-purple p-3 mb-4 flex items-center gap-4 flex-shrink-0">
+        <div className="w-10 h-10 bg-gray-900 border-2 border-black shadow-[0_0_5px_rgba(139,92,246,0.3)] flex items-center justify-center text-lg text-gta-orange font-bold">
           {wallet.type === 'contract' ? 'C' : 'W'}
         </div>
         <div className="flex-1 min-w-0">
@@ -108,63 +104,60 @@ export default function AIExplainer({ wallet }) {
         </span>
       </div>
 
-      {/* Analysis text */}
       <div className="flex-1 overflow-y-auto">
-        <div className="bg-black/80 border-l-4 border-l-gta-blue p-4 min-h-[120px] relative mb-4">
-          <p className="text-[12px] text-gta-blue font-bold uppercase tracking-widest mb-2">Subject Analysis</p>
+        <div className="bg-black/90 border-l-4 border-l-gta-purple p-4 min-h-[120px] relative mb-4 shadow-[inset_0_0_15px_rgba(91,33,182,0.3)]">
+          <p className="text-[12px] text-gta-purple font-bold uppercase tracking-widest mb-2">Psychic Reading</p>
           <p
             className={`text-sm text-gray-200 font-medium leading-relaxed ${isTyping ? 'cursor-blink' : ''}`}
             dangerouslySetInnerHTML={{ __html: parseMarkdown(displayedText) }}
           />
         </div>
 
-        {/* Verdict */}
         {!isTyping && (
           <div className={`mt-3 p-3 flex items-start gap-4 border-2 shadow-lg ${
             wallet.risk === 'SAFE' || wallet.risk === 'LOW'
-              ? 'bg-gta-green/20 border-gta-green'
+              ? 'bg-gta-green/10 border-gta-green'
               : wallet.risk === 'MEDIUM'
-              ? 'bg-orange-500/20 border-orange-500'
-              : 'bg-gta-red/20 border-gta-red'
+              ? 'bg-gta-orange/10 border-gta-orange'
+              : 'bg-gta-red/10 border-gta-red'
           }`}>
             <span className="text-3xl flex-shrink-0 drop-shadow-md">
-              {wallet.risk === 'SAFE' || wallet.risk === 'LOW' ? '✅' : wallet.risk === 'MEDIUM' ? '⚠️' : '💀'}
+              {wallet.risk === 'SAFE' || wallet.risk === 'LOW' ? '🎃' : wallet.risk === 'MEDIUM' ? '🦇' : '👻'}
             </span>
             <div>
               <p className="text-sm font-bold text-white uppercase tracking-widest">
                 {wallet.risk === 'SAFE' || wallet.risk === 'LOW'
-                  ? 'Verdict: Cleared'
+                  ? 'Verdict: Mortal / Clean'
                   : wallet.risk === 'MEDIUM'
-                  ? 'Verdict: Keep on Radar'
-                  : 'Verdict: Shoot on Sight'}
+                  ? 'Verdict: Haunted'
+                  : 'Verdict: Exorcise on Sight'}
               </p>
               <p className="text-[11px] text-gray-400 font-bold uppercase mt-1">
-                Threat Level: <span className="text-white">{wallet.trustScore || 0}/100</span>
+                Curse Level: <span className="text-white">{wallet.trustScore || 0}/100</span>
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Controls */}
       <div className="flex gap-2 mt-4 flex-shrink-0">
         {isTyping ? (
           <button onClick={handleSkip}
-            className="flex-1 py-3 text-xs bg-black hover:bg-white border-2 border-gray-700 hover:border-black text-gray-400 hover:text-black font-bold uppercase tracking-widest transition-all">
-            Skip Transmission
+            className="flex-1 py-3 text-xs bg-black hover:bg-white border-2 border-gta-purple hover:border-black text-gta-purple hover:text-black font-bold uppercase tracking-widest transition-all">
+            Sever Connection
           </button>
         ) : (
           <>
             {explanations.length > 1 && (
               <button onClick={handleNext}
-                className="flex-1 py-3 text-xs bg-black hover:bg-white border-2 border-gray-700 hover:border-black text-white hover:text-black font-bold uppercase tracking-widest transition-all">
-                Next Intel ({explanationIndex + 1}/{explanations.length})
+                className="flex-1 py-3 text-xs bg-black hover:bg-white border-2 border-gray-700 hover:border-black text-gta-orange hover:text-black font-bold uppercase tracking-widest transition-all">
+                Next Vision ({explanationIndex + 1}/{explanations.length})
               </button>
             )}
             {explanations.length > 0 && (
               <button onClick={() => typeText(explanations[explanationIndex])}
-                className="py-3 px-6 text-xs bg-gta-blue/20 hover:bg-gta-blue border-2 border-gta-blue text-gta-blue hover:text-white font-bold uppercase tracking-widest transition-all">
-                ↺ Replay
+                className="py-3 px-6 text-xs bg-gta-purple/20 hover:bg-gta-purple border-2 border-gta-purple text-gta-purple hover:text-white font-bold uppercase tracking-widest transition-all">
+                ↺ Conjure Again
               </button>
             )}
           </>

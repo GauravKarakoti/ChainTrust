@@ -10,20 +10,13 @@ export default {
           700: '#151d35',
           600: '#1e2847',
         },
-        accent: {
-          blue: '#3b82f6',
-          purple: '#8b5cf6',
-          cyan: '#06b6d4',
-          green: '#10b981',
-          red: '#ef4444',
-          orange: '#f59e0b',
-        },
         gta: {
-          green: '#54b649', // Money/Mission objective green
-          red: '#ff2a2a',   // Wasted/Critical threat red
-          blue: '#2e86c1',  // System info blue
-          hudBase: 'rgba(0, 0, 0, 0.75)', // Translucent dark HUD
-          star: '#ffffff'   // Wanted star white
+          green: '#39FF14', // Toxic slime green (GTA SA + Halloween)
+          red: '#8A0303',   // Blood red (Wasted)
+          blue: '#5b21b6',  // Deep spooky purple (Midnight sky)
+          orange: '#FF7518', // Pumpkin orange (Halloween pop)
+          hudBase: 'rgba(15, 10, 25, 0.85)', // Translucent dark purple/black HUD
+          star: '#FF7518'   // Orange wanted stars
         }
       },
       fontFamily: {
