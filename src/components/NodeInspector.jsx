@@ -35,67 +35,65 @@ export default function NodeInspector({ wallet, onClose }) {
   const [localCurrency, setLocalCurrency] = useState(null) 
   const [showLocalCurrency, setShowLocalCurrency] = useState(false)
 
+  // Auto-detect currency
   useEffect(() => {
-    let isMounted = true;
+    const controller = new AbortController();
+    
     async function fetchLocationAndRate() {
       try {
-        const ipRes = await fetch('https://ipapi.co/json/');
+        const ipRes = await fetch('https://ipapi.co/json/', { signal: controller.signal });
         const ipData = await ipRes.json();
-        const currencyCode = ipData.currency; 
-
-        if (currencyCode) {
-          const rateRes = await fetch('https://open.er-api.com/v6/latest/USD');
+        
+        if (ipData.currency) {
+          const rateRes = await fetch('https://open.er-api.com/v6/latest/USD', { signal: controller.signal });
           const rateData = await rateRes.json();
-          const rate = rateData.rates[currencyCode];
-
-          if (isMounted && rate) {
-            setLocalCurrency({ code: currencyCode, rate });
-          }
+          const rate = rateData.rates[ipData.currency];
+          
+          if (rate) setLocalCurrency({ code: ipData.currency, rate });
         }
       } catch (error) {
-        console.error("Failed to auto-detect currency/rates:", error);
+        if (error.name !== 'AbortError') console.error("Failed to auto-detect currency/rates:", error);
       }
     }
     fetchLocationAndRate();
-    return () => { isMounted = false };
+    
+    return () => controller.abort();
   }, []);
 
+  // Fetch Etherscan Data
   useEffect(() => {
-    if (!wallet || !wallet.address) return;
-    let isMounted = true;
+    if (!wallet?.address) return;
+    
+    const controller = new AbortController();
     setLiveStats({ balance: null, txCount: null, isLoading: true });
 
     async function fetchRealData() {
       try {
-        const apiKey = import.meta.env.VITE_ETHERSCAN_API_KEY;
+        const apiKey = import.meta.env.VITE_ETHERSCAN_API_KEY; // Note: Exposing this on the client can be a security risk in production.
         const address = wallet.address;
 
-        const balanceRes = await fetch(`/etherscan/v2/api?chainid=1&module=account&action=balance&address=${address}&tag=latest&apikey=${apiKey}`);
-        const balanceData = await balanceRes.json();
+        const [balanceRes, txCountRes] = await Promise.all([
+          fetch(`/etherscan/v2/api?chainid=1&module=account&action=balance&address=${address}&tag=latest&apikey=${apiKey}`, { signal: controller.signal }),
+          fetch(`/etherscan/v2/api?chainid=1&module=proxy&action=eth_getTransactionCount&address=${address}&tag=latest&apikey=${apiKey}`, { signal: controller.signal })
+        ]);
 
-        const txCountRes = await fetch(`/etherscan/v2/api?chainid=1&module=proxy&action=eth_getTransactionCount&address=${address}&tag=latest&apikey=${apiKey}`);
+        const balanceData = await balanceRes.json();
         const txCountData = await txCountRes.json();
 
-        if (isMounted) {
-          let realBalance = null;
-          let realTxCount = null;
+        let realBalance = balanceData.status === "1" && balanceData.result ? (Number(balanceData.result) / 1e18).toFixed(4) : null;
+        let realTxCount = txCountData.result ? parseInt(txCountData.result, 16) : null;
 
-          if (balanceData.status === "1" && balanceData.result) {
-            realBalance = (Number(balanceData.result) / 1e18).toFixed(4);
-          }
-          if (txCountData.result) {
-            realTxCount = parseInt(txCountData.result, 16);
-          }
-
-          setLiveStats({ balance: realBalance, txCount: realTxCount, isLoading: false });
-        }
+        setLiveStats({ balance: realBalance, txCount: realTxCount, isLoading: false });
       } catch (error) {
-        console.error("Etherscan fetch failed:", error);
-        if (isMounted) setLiveStats(prev => ({ ...prev, isLoading: false }));
+        if (error.name !== 'AbortError') {
+          console.error("Etherscan fetch failed:", error);
+          setLiveStats(prev => ({ ...prev, isLoading: false }));
+        }
       }
     }
     fetchRealData();
-    return () => { isMounted = false };
+    
+    return () => controller.abort();
   }, [wallet]);
 
   if (!wallet) return (

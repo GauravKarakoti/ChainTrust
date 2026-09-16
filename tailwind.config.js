@@ -5,23 +5,25 @@ export default {
     extend: {
       colors: {
         dark: {
-          900: '#0a0e1a',
-          800: '#0f1628',
-          700: '#151d35',
-          600: '#1e2847',
+          900: '#0a0a0a', // Gritty asphalt black
+          800: '#141414',
+          700: '#1f1f1f',
+          600: '#2d2d2d',
         },
         gta: {
-          green: '#39FF14', // Toxic slime green (GTA SA + Halloween)
-          red: '#8A0303',   // Blood red (Wasted)
-          blue: '#5b21b6',  // Deep spooky purple (Midnight sky)
-          orange: '#FF7518', // Pumpkin orange (Halloween pop)
-          hudBase: 'rgba(15, 10, 25, 0.85)', // Translucent dark purple/black HUD
-          star: '#FF7518'   // Orange wanted stars
+          green: '#54b649', // Classic San Andreas Green
+          blue: '#00a8f3',  // GTA V Menu Blue
+          red: '#990000',   // Wasted Red
+          hudBase: 'rgba(0, 0, 0, 0.85)', // Standard dark HUD
+        },
+        hallow: {
+          orange: '#FF7518', // Pumpkin accent
+          slime: '#39FF14',  // Toxic green accent
         }
       },
       fontFamily: {
-        gta: ['Pricedown', 'sans-serif'], // Use for WASTED, BUSTED, and titles
-        hud: ['Chalet', 'ui-sans-serif', 'system-ui'], // Use for readable HUD text
+        gta: ['Pricedown', 'sans-serif'], 
+        hud: ['Chalet', 'ui-sans-serif', 'system-ui'],
       }
     },
   },

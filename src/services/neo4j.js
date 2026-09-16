@@ -413,3 +413,72 @@ export async function fetchAIExplanations(address) {
     await session.close();
   }
 }
+
+export async function checkConnection() {
+  const session = driver.session();
+  try {
+    await session.run('RETURN 1');
+    return true;
+  } catch (error) {
+    return false;
+  } finally {
+    await session.close();
+  }
+}
+
+/**
+ * Resumes a paused Neo4j Aura instance via the Aura REST API.
+ */
+export async function resumeAuraInstance() {
+  const AURA_CLIENT_ID = import.meta.env.VITE_AURA_CLIENT_ID;
+  const AURA_CLIENT_SECRET = import.meta.env.VITE_AURA_CLIENT_SECRET;
+  
+  if (!AURA_CLIENT_ID || !AURA_CLIENT_SECRET) {
+    console.error("Missing Aura API credentials (VITE_AURA_CLIENT_ID & VITE_AURA_CLIENT_SECRET)");
+    return false;
+  }
+
+  try {
+    // Extract instance ID from the connection URI (e.g., neo4j+s://<instance_id>.databases.neo4j.io)
+    const uriMatch = NEO4J_URI.match(/\/\/(.*?)\.databases/);
+    const instanceId = import.meta.env.VITE_NEO4J_INSTANCE_ID || (uriMatch ? uriMatch[1] : null);
+
+    if (!instanceId) {
+      console.error("Could not extract Aura Instance ID from URI. Please set VITE_NEO4J_INSTANCE_ID.");
+      return false;
+    }
+
+    // 1. Authenticate with Aura API via Client Credentials
+    const credentials = btoa(`${AURA_CLIENT_ID}:${AURA_CLIENT_SECRET}`);
+    const tokenRes = await fetch('https://api.neo4j.io/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    });
+    
+    if (!tokenRes.ok) throw new Error("Failed to authenticate with Aura API");
+    const { access_token } = await tokenRes.json();
+
+    // 2. Trigger Resume for the specific instance
+    const resumeRes = await fetch(`https://api.neo4j.io/v1/instances/${instanceId}/resume`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!resumeRes.ok && resumeRes.status !== 202 && resumeRes.status !== 200) {
+      throw new Error(`Failed to resume Aura instance. Status: ${resumeRes.status}`);
+    }
+    
+    console.log("Aura instance resume triggered successfully. Waking up...");
+    return true;
+  } catch (error) {
+    console.error("Error resuming Neo4j Aura instance:", error);
+    return false;
+  }
+}
