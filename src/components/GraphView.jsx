@@ -132,54 +132,54 @@ export default function GraphView({ elements, onNodeSelect, selectedNode, filter
   const hasRateLimitedNodes = elements.nodes.some(n => n.data?.risk === 'RATE_LIMITED')
 
   return (
-    <div className="relative w-full h-full bg-gta-hudBase rounded-[3rem] overflow-hidden border-4 border-gta-purple shadow-[0_0_20px_rgba(91,33,182,0.6)] font-hud">
-      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#FF7518 1px, transparent 1px), linear-gradient(90deg, #FF7518 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+    <div className="relative w-full h-full bg-obsidian border-4 border-black font-pixel">
+      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#FF7518 2px, transparent 2px), linear-gradient(90deg, #FF7518 2px, transparent 2px)', backgroundSize: '64px 64px' }} />
       <div ref={containerRef} className="w-full h-full relative z-10" />
 
       {hasRateLimitedNodes && (
-        <div className="absolute top-16 left-6 z-20 bg-black/80 border border-gta-orange text-gta-orange text-[11px] px-3 py-1.5 rounded flex items-center gap-2 shadow-lg backdrop-blur-sm">
-          <span className="inline-block w-2 h-2 rounded-full bg-gta-orange animate-pulse" />
-          <span>API rate limit (Code 666). Some blips unverified.</span>
+        <div className="absolute top-16 left-6 z-20 bg-black border-4 border-pumpkin text-pumpkin text-[16px] px-3 py-2 flex items-center gap-2 shadow-block">
+          <span className="inline-block w-3 h-3 border-2 border-black bg-pumpkin animate-pulse" />
+          <span>Server lag (Code 666). Some chunks missing.</span>
         </div>
       )}
 
       <div className="absolute top-6 right-6 flex flex-col gap-2 z-20">
-        <button onClick={handleZoomIn} className="w-10 h-10 bg-black/80 hover:bg-gta-orange text-white hover:text-black border-2 border-gta-orange hover:border-black rounded-full transition-all text-xl font-bold flex items-center justify-center shadow-lg">+</button>
-        <button onClick={handleZoomOut} className="w-10 h-10 bg-black/80 hover:bg-gta-orange text-white hover:text-black border-2 border-gta-orange hover:border-black rounded-full transition-all text-xl font-bold flex items-center justify-center shadow-lg">-</button>
-        <button onClick={handleFit} className="w-10 h-10 bg-black/80 hover:bg-gta-orange text-white hover:text-black border-2 border-gta-orange hover:border-black rounded-full transition-all text-sm font-bold flex items-center justify-center shadow-lg uppercase">Fit</button>
+        <button onClick={handleZoomIn} className="w-12 h-12 bg-black hover:bg-pumpkin text-white hover:text-black border-4 border-black transition-all text-2xl flex items-center justify-center shadow-block">+</button>
+        <button onClick={handleZoomOut} className="w-12 h-12 bg-black hover:bg-pumpkin text-white hover:text-black border-4 border-black transition-all text-2xl flex items-center justify-center shadow-block">-</button>
+        <button onClick={handleFit} className="w-12 h-12 bg-black hover:bg-pumpkin text-white hover:text-black border-4 border-black transition-all text-[14px] flex items-center justify-center shadow-block uppercase">FIT</button>
       </div>
 
-      <div className="absolute bottom-6 left-6 bg-black/90 border-2 border-gta-purple p-3 z-20 rounded-md">
-        <p className="text-[12px] text-gta-orange mb-2 font-gta tracking-widest" style={{ WebkitTextStroke: '0.5px black' }}>UNDERWORLD RADAR</p>
+      <div className="absolute bottom-6 left-6 bg-black border-4 border-black p-3 z-20 shadow-block">
+        <p className="text-[16px] text-pumpkin mb-2 font-block drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">NETHER MAP</p>
         <div className="flex flex-col gap-2">
           {[
             { color: '#8A0303', label: 'Demonic Entity' },
             { color: '#FF7518', label: 'Cursed Target' },
-            { color: '#eab308', label: 'Hexed (Rate Limited)' },
+            { color: '#eab308', label: 'Hexed (Missing Chunks)' },
             { color: '#39FF14', label: 'Innocent Mortal' },
-            { color: '#ffffff', label: 'Player (Target)' },
-          ].map(({ color, label }) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full border border-black shadow-[0_0_5px_currentColor]" style={{ backgroundColor: color, color: color }} />
-              <span className="text-[10px] text-gray-300 font-bold uppercase">{label}</span>
+            { color: '#ffffff', label: 'Spawn (Target)' },
+          ].map(({ color, border, label }) => (
+            <div key={label} className="flex items-center gap-3">
+              <div className="w-4 h-4 border-2 shadow-block-sm" style={{ backgroundColor: color, borderColor: border }} />
+              <span className="text-[16px] text-white uppercase">{label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="absolute top-6 left-6 bg-black/90 border-2 border-gta-purple px-4 py-2 z-20 flex gap-4 rounded-md shadow-[0_0_10px_rgba(91,33,182,0.5)]">
-        <span className="text-xs text-gray-400 font-bold uppercase">
-          Souls: <span className="text-gta-orange">{elements.nodes.length}</span>
+      <div className="absolute top-6 left-6 bg-black border-4 border-black px-4 py-2 z-20 flex gap-4 shadow-block">
+        <span className="text-[16px] text-cobblestone uppercase">
+          Souls: <span className="text-pumpkin">{elements.nodes.length}</span>
         </span>
-        <span className="text-xs text-gray-400 font-bold uppercase">
-          Links: <span className="text-gta-orange">{elements.edges.length}</span>
+        <span className="text-[16px] text-cobblestone uppercase">
+          Leashes: <span className="text-pumpkin">{elements.edges.length}</span>
         </span>
       </div>
 
       {!selectedNode && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <div className="bg-black/90 px-6 py-2 border-2 border-gta-orange rounded-sm shadow-[0_0_15px_rgba(255,117,24,0.5)]">
-            <p className="text-sm text-gta-orange font-bold uppercase tracking-widest">Select soul to hunt</p>
+          <div className="bg-black px-6 py-4 border-4 border-pumpkin shadow-block">
+            <p className="text-xl text-pumpkin font-block drop-shadow-[2px_2px_0_rgba(0,0,0,1)] uppercase">Select soul to hunt</p>
           </div>
         </div>
       )}

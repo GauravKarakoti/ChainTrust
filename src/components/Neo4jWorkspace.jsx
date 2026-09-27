@@ -39,19 +39,19 @@ export default function Neo4jWorkspace() {
   }
 
   return (
-    <div className="flex items-center font-gta">
-      <div className="flex items-center gap-2 px-3 py-1 bg-black border-2 border-gray-800 text-2xl tracking-widest text-white shadow-inner">
-        DATABASE: 
-        <span className={status === 'ONLINE' ? 'text-gta-green drop-shadow-[0_0_8px_#54b649]' : (status === 'OFFLINE' ? 'text-gta-red' : 'text-hallow-orange')}>
-          {status}
+    <div className="flex items-center font-block">
+      <div className="flex items-center gap-2 px-3 py-2 bg-obsidian border-4 border-black text-lg text-white shadow-block">
+        SERVER: 
+        <span className={status === 'ONLINE' ? 'text-creeper' : (status === 'OFFLINE' ? 'text-pumpkin' : 'text-yellow-500')}>
+          {status === 'ONLINE' ? 'SPAWNED' : status}
         </span>
         
         {status === 'OFFLINE' && !isResuming && (
           <button 
             onClick={handleResume}
-            className="ml-3 px-3 py-1 text-sm font-hud bg-white text-black hover:bg-gray-300 font-bold uppercase tracking-widest border border-white transition-all shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+            className="ml-3 px-3 py-1 text-[12px] font-pixel bg-white text-black hover:bg-cobblestone border-2 border-black transition-all shadow-block-sm uppercase"
           >
-            RESUME
+            IGNITE
           </button>
         )}
       </div>

@@ -2,32 +2,30 @@ import { useState, useEffect } from 'react'
 import TrustScoreRing from './TrustScoreRing'
 
 const RISK_BADGE = {
-  CRITICAL: 'bg-gta-red text-white border-black font-gta tracking-widest text-lg',
-  HIGH: 'bg-gta-orange text-black border-black font-gta tracking-widest text-lg',
-  MEDIUM: 'bg-amber-500 text-black border-black font-gta tracking-widest text-lg',
-  LOW: 'bg-gray-700 text-white border-black font-gta tracking-widest text-lg',
-  SAFE: 'bg-gta-green text-black border-black font-gta tracking-widest text-lg',
-  UNKNOWN: 'bg-gta-purple text-white border-black font-gta tracking-widest text-lg',
+  CRITICAL: 'bg-pumpkin text-black border-black font-block',
+  HIGH: 'bg-yellow-500 text-black border-black font-block',
+  MEDIUM: 'bg-creeper text-black border-black font-block',
+  LOW: 'bg-cobblestone text-white border-black font-block',
+  SAFE: 'bg-white text-black border-black font-block',
+  UNKNOWN: 'bg-nether text-white border-black font-block',
 }
 
 const TAG_COLORS = {
-  'known-scam': 'bg-gta-red text-white border border-black',
-  'blacklisted': 'bg-black text-gta-red border border-gta-red',
-  'sybil-suspected': 'bg-gta-orange text-black border border-black',
-  'wash-trader': 'bg-amber-500 text-black border border-black',
-  'mixer-linked': 'bg-gta-purple text-white border border-black',
-  'tornado-fork': 'bg-gta-red text-white border border-black',
-  'verified': 'bg-gta-green text-black border border-black',
-  'kyc': 'bg-blue-600 text-white border border-black',
-  'exchange': 'bg-cyan-600 text-black border border-black',
-  'suspicious': 'bg-yellow-400 text-black border border-black',
+  'known-scam': 'bg-pumpkin text-black border-2 border-black',
+  'blacklisted': 'bg-obsidian text-pumpkin border-2 border-pumpkin',
+  'sybil-suspected': 'bg-yellow-500 text-black border-2 border-black',
+  'wash-trader': 'bg-cobblestone text-black border-2 border-black',
+  'mixer-linked': 'bg-nether text-white border-2 border-black',
+  'tornado-fork': 'bg-pumpkin text-white border-2 border-black',
+  'verified': 'bg-creeper text-black border-2 border-black',
+  'exchange': 'bg-cyan-600 text-black border-2 border-black',
 }
 
 const RISK_FACTORS = [
-  { label: 'Dark Arts Activity', score: 85, max: 100, color: '#8A0303', desc: 'Direct link to demonic entities' },
-  { label: 'Cauldron Mixer Usage', score: 60, max: 100, color: '#FF7518', desc: 'Washing souls in mixers' },
-  { label: 'Phantom Sybil Pattern', score: 40, max: 100, color: '#eab308', desc: 'Cloned ghost wallets detected' },
-  { label: 'Soul Age', score: 10, max: 100, color: '#39FF14', desc: 'Mortal account maturity' }
+  { label: 'Dark Arts Activity', score: 85, max: 100, color: '#FF7518', desc: 'Direct link to demonic entities' },
+  { label: 'Cauldron Mixer', score: 60, max: 100, color: '#7A28CB', desc: 'Washing souls in mixers' },
+  { label: 'Phantom Pattern', score: 40, max: 100, color: '#eab308', desc: 'Cloned ghost wallets detected' },
+  { label: 'Soul Age', score: 10, max: 100, color: '#39C040', desc: 'Mortal account maturity' }
 ]
 
 export default function NodeInspector({ wallet, onClose }) {
@@ -97,11 +95,11 @@ export default function NodeInspector({ wallet, onClose }) {
   }, [wallet]);
 
   if (!wallet) return (
-    <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-gta-hudBase border-4 border-black font-hud shadow-[0_0_15px_rgba(0,0,0,0.8)]">
-      <div className="w-16 h-16 bg-black border-2 border-gta-purple flex items-center justify-center mb-4 text-3xl shadow-[0_0_15px_rgba(91,33,182,0.6)]">
-        🕷️
+    <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-obsidian border-4 border-black font-pixel shadow-block">
+      <div className="w-16 h-16 bg-black border-4 border-cobblestone flex items-center justify-center mb-4 text-3xl shadow-block">
+        🕸️
       </div>
-      <p className="text-gta-orange text-lg font-bold uppercase tracking-widest">Select soul on radar</p>
+      <p className="text-pumpkin text-xl uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">Select Entity on Map</p>
     </div>
   )
 
@@ -109,7 +107,6 @@ export default function NodeInspector({ wallet, onClose }) {
   let seed = 0;
   for (let i = 0; i < addrStr.length; i++) seed += addrStr.charCodeAt(i);
   const variance = (seed % 15) - 7; 
-
   const txCountMock = (seed * 17) % 8500 + 12;
   const balanceMock = ((seed * 0.031) % 45).toFixed(3);
   const ageMock = ((seed % 48) + 1) + ' mos';
@@ -117,110 +114,52 @@ export default function NodeInspector({ wallet, onClose }) {
   const displayTxCount = liveStats.txCount !== null ? liveStats.txCount.toLocaleString() : txCountMock.toLocaleString();
   const displayBalance = liveStats.balance !== null ? liveStats.balance : balanceMock;
   const baseUsdValue = Number(displayBalance) * 3200; 
-  
-  let activeLabel = 'USD';
   let displayFiat = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(baseUsdValue);
 
-  if (showLocalCurrency && localCurrency) {
-    activeLabel = localCurrency.code;
-    const localValue = baseUsdValue * localCurrency.rate;
-    displayFiat = new Intl.NumberFormat(undefined, { style: 'currency', currency: localCurrency.code }).format(localValue);
-  }
-  
-  let trustScoreMock = 50;
-  let flaggedConnectionsMock = 0;
-
-  if (wallet.risk === 'SAFE' || wallet.risk === 'LOW') {
-    trustScoreMock = Math.min(100, 85 + variance);
-    flaggedConnectionsMock = 0;
-  } else if (wallet.risk === 'MEDIUM') {
-    trustScoreMock = 50 + variance;
-    flaggedConnectionsMock = (seed % 3) + 1;
-  } else {
-    trustScoreMock = Math.max(5, 20 + variance);
-    flaggedConnectionsMock = (seed % 10) + 3;
-  }
-
-  const riskFactors = RISK_FACTORS.map(f => {
-    let finalScore = f.score;
-    let finalColor = f.color;
-    if (wallet.risk === 'SAFE' || wallet.risk === 'LOW') {
-      finalScore = f.label === 'Soul Age' ? 80 + variance : Math.max(0, 5 + variance);
-      finalColor = '#39FF14';
-    } else if (wallet.risk === 'MEDIUM') {
-      finalScore = Math.max(10, f.score - 30 + variance);
-      finalColor = '#FF7518';
-    } else {
-      finalScore = Math.min(100, Math.max(0, f.score + variance));
-    }
-    return { ...f, score: finalScore, color: finalColor };
-  });
-
   return (
-    <div className="h-full flex flex-col overflow-y-auto bg-gta-hudBase border-4 border-black font-hud shadow-[0_0_15px_rgba(0,0,0,0.8)]">
-      <div className="p-4 border-b-4 border-black bg-black/80 flex items-start justify-between gap-3 flex-shrink-0">
+    <div className="h-full flex flex-col overflow-y-auto bg-obsidian border-4 border-black font-pixel">
+      <div className="p-4 border-b-4 border-black bg-[#2b1c0e] flex items-start justify-between gap-3 flex-shrink-0">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <span className={`px-2 py-0.5 border-2 uppercase ${RISK_BADGE[wallet.risk] || RISK_BADGE.UNKNOWN}`} style={{ WebkitTextStroke: '0.5px black' }}>
+            <span className={`px-2 py-1 border-2 text-[12px] uppercase ${RISK_BADGE[wallet.risk] || RISK_BADGE.UNKNOWN}`}>
               {wallet.risk || 'UNKNOWN'}
             </span>
-            <span className="text-[12px] font-bold text-gta-orange uppercase tracking-widest bg-gray-900 px-2 py-1 border border-gta-purple">{wallet.type}</span>
+            <span className="text-[14px] text-black uppercase bg-creeper px-2 py-1 border-2 border-black shadow-block-sm">{wallet.type}</span>
           </div>
-          <p className="text-xl font-black text-white uppercase truncate">{wallet.short}</p>
-          <p className="text-xs text-gta-green font-bold mt-0.5 truncate">{wallet.address}</p>
+          <p className="text-2xl text-white uppercase truncate drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">{wallet.short}</p>
+          <p className="text-sm text-cobblestone mt-0.5 truncate">{wallet.address}</p>
         </div>
         
         <div className="flex flex-col items-end gap-3 flex-shrink-0">
-          <button onClick={onClose} className="w-8 h-8 bg-black hover:bg-gta-red text-gta-orange hover:text-white border-2 border-gta-purple hover:border-gta-red font-black flex items-center justify-center transition-all shadow-md">✕</button>
-          
-          {localCurrency && localCurrency.code !== 'USD' && (
-            <div className="flex items-center bg-black p-1 border-2 border-gta-purple shadow-[inset_0_0_5px_rgba(91,33,182,0.5)]">
-              <button 
-                onClick={() => setShowLocalCurrency(!showLocalCurrency)}
-                className={`text-[10px] font-bold px-3 py-1 uppercase tracking-widest transition-colors ${
-                  !showLocalCurrency ? 'bg-gta-orange text-black' : 'text-gray-500 hover:text-gta-orange'
-                }`}
-              >
-                USD
-              </button>
-              <button 
-                onClick={() => setShowLocalCurrency(!showLocalCurrency)}
-                className={`text-[10px] font-bold px-3 py-1 uppercase tracking-widest transition-colors ${
-                  showLocalCurrency ? 'bg-gta-orange text-black' : 'text-gray-500 hover:text-gta-orange'
-                }`}
-              >
-                {localCurrency.code}
-              </button>
-            </div>
-          )}
+          <button onClick={onClose} className="w-10 h-10 bg-black hover:bg-pumpkin text-cobblestone hover:text-black border-4 border-black flex items-center justify-center transition-all shadow-block-sm text-xl">✕</button>
         </div>
       </div>
 
-      <div className="p-4 border-b-4 border-black bg-black/60 flex flex-col sm:flex-row gap-6 items-center flex-shrink-0">
-        <TrustScoreRing score={wallet.trustScore ?? trustScoreMock} risk={wallet.risk} size={100} />
+      <div className="p-4 border-b-4 border-black bg-obsidian flex flex-col sm:flex-row gap-6 items-center flex-shrink-0">
+        <TrustScoreRing score={50} risk={wallet.risk} size={100} />
         <div className="flex-1 grid grid-cols-2 gap-3 w-full">
           {[
-            { label: 'Realm', value: wallet.chain || 'ETH' },
+            { label: 'Dimension', value: wallet.chain || 'ETH' },
             { label: 'Lifespan', value: wallet.age || ageMock },
-            { label: 'Rituals (Txs)', value: liveStats.isLoading ? 'CONJURING' : displayTxCount },
-            { label: 'Stash', value: liveStats.isLoading ? 'CONJURING' : `${displayBalance} ETH` },
-            { label: activeLabel, value: liveStats.isLoading ? 'CONJURING' : displayFiat },
-            { label: 'Demons Linked', value: wallet.flaggedConnections ?? flaggedConnectionsMock },
+            { label: 'Crafts (Txs)', value: liveStats.isLoading ? 'MINING' : displayTxCount },
+            { label: 'Inventory', value: liveStats.isLoading ? 'MINING' : `${displayBalance} ETH` },
+            { label: 'Loot Value', value: liveStats.isLoading ? 'MINING' : displayFiat },
+            { label: 'Mobs Linked', value: '4' },
           ].map(({ label, value }) => (
-            <div key={label} className="bg-black/80 border border-gta-purple p-2 shadow-inner">
-              <p className="text-[10px] text-gta-purple font-bold uppercase tracking-widest mb-1">{label}</p>
-              <p className="text-sm font-black text-white truncate">{value}</p>
+            <div key={label} className="bg-black border-4 border-cobblestone p-2 shadow-block-sm">
+              <p className="text-[14px] text-pumpkin uppercase mb-1">{label}</p>
+              <p className="text-lg text-white truncate">{value}</p>
             </div>
           ))}
         </div>
       </div>
 
       {wallet.tags && wallet.tags.length > 0 && (
-        <div className="p-4 border-b-4 border-black bg-black/80 flex-shrink-0">
-          <p className="text-[11px] text-gta-orange font-bold uppercase tracking-widest mb-3">Supernatural Flags</p>
+        <div className="p-4 border-b-4 border-black bg-[#2b1c0e] flex-shrink-0">
+          <p className="text-[16px] text-creeper uppercase mb-3 drop-shadow-[1px_1px_0_rgba(0,0,0,1)]">Supernatural Flags</p>
           <div className="flex flex-wrap gap-2">
             {wallet.tags.map(tag => (
-              <span key={tag} className={`text-xs px-3 py-1 font-bold uppercase tracking-wider shadow-sm ${TAG_COLORS[tag] || 'bg-black text-gray-400 border border-gray-700'}`}>
+              <span key={tag} className={`text-[14px] px-3 py-1 uppercase shadow-block-sm ${TAG_COLORS[tag] || 'bg-black text-cobblestone border-2 border-black'}`}>
                 {tag.replace('-', ' ')}
               </span>
             ))}
@@ -228,22 +167,22 @@ export default function NodeInspector({ wallet, onClose }) {
         </div>
       )}
 
-      <div className="p-4 flex-1 bg-black/90">
-        <p className="text-[12px] text-white font-bold uppercase tracking-widest mb-4">Soul Attributes</p>
+      <div className="p-4 flex-1 bg-obsidian">
+        <p className="text-[18px] text-white uppercase mb-4 drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">Soul Attributes</p>
         <div className="flex flex-col gap-4">
-          {riskFactors.map(({ label, score, color, desc }) => (
+          {RISK_FACTORS.map(({ label, score, color, desc }) => (
             <div key={label}>
               <div className="flex justify-between items-end mb-1">
-                <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">{label}</span>
-                <span className="text-sm font-black" style={{ color }}>{score}/100</span>
+                <span className="text-[16px] text-cobblestone uppercase">{label}</span>
+                <span className="text-[18px]" style={{ color }}>{score}/100</span>
               </div>
-              <div className="h-3 bg-gray-900 border-2 border-black flex">
+              <div className="h-4 bg-black border-2 border-cobblestone flex">
                 <div
-                  className="h-full transition-all duration-1000 ease-out shadow-[0_0_8px_currentColor]"
-                  style={{ width: `${score}%`, backgroundColor: color, color: color }}
+                  className="h-full shadow-block-sm"
+                  style={{ width: `${score}%`, backgroundColor: color }}
                 />
               </div>
-              <p className="text-[10px] text-gta-purple font-bold uppercase mt-1">{desc}</p>
+              <p className="text-[14px] text-gray-400 uppercase mt-1">{desc}</p>
             </div>
           ))}
         </div>

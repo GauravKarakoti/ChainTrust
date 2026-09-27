@@ -57,7 +57,7 @@ export default function App() {
       setTargetProfile(mergedProfile || {})
       setSelectedNode(mergedProfile || null)
     } catch (error) {
-      console.error("Failed to fetch TigerGraph data:", error)
+      console.error("Failed to fetch graph data:", error)
       setGraphElements({ nodes: [], edges: [] })
       setTargetProfile({})
     } finally {
@@ -75,12 +75,12 @@ export default function App() {
   }, [handleSearch, searchedAddress])
 
   return (
-    <div className="min-h-screen flex flex-col font-hud bg-transparent">
-      <header className="flex-shrink-0 border-b-4 border-gray-800 bg-black sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto px-4 h-16 md:h-24 flex items-center justify-between gap-2 md:gap-4">
+    <div className="min-h-screen flex flex-col font-pixel bg-transparent">
+      <header className="flex-shrink-0 border-b-4 border-black bg-obsidian shadow-block sticky top-0 z-50">
+        <div className="max-w-[1600px] mx-auto px-4 h-20 md:h-24 flex items-center justify-between gap-2 md:gap-4">
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
             <img src="/logo.png" alt="ChainTrust" className="w-10 md:h-12 object-contain" />
-            <span className="text-xl md:text-3xl font-gta text-white tracking-widest" style={{ WebkitTextStroke: '1px black' }}>
+            <span className="text-xl md:text-2xl font-block text-white tracking-widest drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">
               CHAINTRUST
             </span>
           </div>
@@ -91,21 +91,21 @@ export default function App() {
 
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
             <Neo4jWorkspace />
-            <div className="hidden sm:flex items-center gap-2 text-[12px] font-black text-gta-green bg-black border-2 border-gta-green px-3 py-1 uppercase tracking-widest">
-              <span className="w-2 h-2 border border-black bg-gta-green animate-pulse" />
-              ETH NET
+            <div className="hidden sm:flex items-center gap-2 text-[16px] font-pixel text-creeper bg-obsidian border-4 border-black shadow-block px-3 py-1 uppercase">
+              <span className="w-3 h-3 border-2 border-black bg-creeper animate-pulse" />
+              ETH
             </div>
           </div>
         </div>
       </header>
 
-      <div className="flex-shrink-0 border-b-2 border-gray-800 bg-dark-900/90 backdrop-blur-sm">
+      <div className="flex-shrink-0 border-b-4 border-black bg-obsidian/95 backdrop-blur-sm">
         <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-center gap-4">
           <div className="flex items-center gap-4 min-w-0">
             <div className="text-left min-w-0">
-              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">TARGET IDENTITY</p>
-              <p className="text-[12px] md:text-sm font-black text-white uppercase tracking-widest truncate max-w-[150px] md:max-w-[300px]">
-                {searchedAddress || 'AWAITING INPUT'}
+              <p className="text-[14px] text-cobblestone uppercase mb-1 drop-shadow-[1px_1px_0_rgba(0,0,0,1)]">TARGET ENTITY</p>
+              <p className="text-[18px] md:text-xl font-block text-white uppercase truncate max-w-[150px] md:max-w-[300px] drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">
+                {searchedAddress || 'AWAITING SPAWN'}
               </p>
             </div>
           </div>
@@ -118,17 +118,17 @@ export default function App() {
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-6 flex flex-col md:flex-row gap-6 min-h-0">
         
         <div className="flex-1 flex flex-col gap-4 min-w-0">
-          <div className="flex items-center gap-4 flex-wrap bg-dark-800 p-3 border-2 border-gray-700">
-            <span className="text-[11px] text-gray-400 uppercase font-bold tracking-widest">FILTERS:</span>
+          <div className="flex items-center gap-4 flex-wrap bg-obsidian p-3 border-4 border-black shadow-block">
+            <span className="text-[16px] text-cobblestone uppercase">SORT BY:</span>
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {FILTER_OPTIONS.map(f => (
                 <button
                   key={f}
                   onClick={() => setGraphFilter(f === graphFilter ? 'ALL' : f)}
-                  className={`text-[11px] px-4 py-1.5 border-2 font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
+                  className={`text-[16px] px-4 py-1.5 border-4 transition-all shadow-block-sm whitespace-nowrap ${
                     graphFilter === f
-                      ? 'bg-white border-white text-black'
-                      : 'bg-black border-gray-600 text-gray-400 hover:border-white hover:text-white'
+                      ? 'bg-pumpkin border-black text-black'
+                      : 'bg-obsidian border-black text-cobblestone hover:bg-cobblestone hover:text-white'
                   }`}
                 >
                   {f}
@@ -137,21 +137,21 @@ export default function App() {
             </div>
           </div>
 
-          <div className="h-[450px] md:h-full md:flex-1 relative">
+          <div className="h-[450px] md:h-full md:flex-1 relative border-4 border-black shadow-block">
             {isLoading ? (
-              <div className="w-full h-full bg-gta-hudBase border-4 border-gray-800 flex flex-col items-center justify-center gap-8 relative overflow-hidden">
+              <div className="w-full h-full bg-obsidian flex flex-col items-center justify-center gap-8 relative overflow-hidden">
                 <div className="text-center relative z-10">
-                  <h2 className="font-gta text-5xl text-white tracking-widest animate-pulse" style={{ WebkitTextStroke: '2px black' }}>TRACING</h2>
-                  <p className="text-xs text-hallow-orange font-bold uppercase tracking-widest mt-3 bg-black px-4 py-1 border border-hallow-orange inline-block shadow-[0_0_10px_rgba(255,117,24,0.3)]">
-                    LSPD Nightmare Protocol Active 🎃
+                  <h2 className="font-block text-3xl text-white drop-shadow-[4px_4px_0_rgba(0,0,0,1)] animate-pulse">MINING DATA</h2>
+                  <p className="text-lg text-creeper uppercase mt-3 bg-black px-4 py-2 border-4 border-creeper inline-block shadow-block">
+                    Spawning Wither Protocol 💀
                   </p>
                 </div>
                 
-                <div className="flex flex-col gap-3 w-72 relative z-10 bg-black p-4 border-2 border-gray-700">
-                  {['Pinging Node', 'Analyzing Risk Factors', 'Checking FIB Watchlist', 'Mapping Sub-Network'].map((step, i) => (
-                    <div key={step} className="flex items-center justify-between border-b border-gray-800 pb-2">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{step}</span>
-                      <div className="w-2 h-2 bg-white animate-ping" style={{ animationDelay: `${i * 0.2}s` }} />
+                <div className="flex flex-col gap-3 w-80 relative z-10 bg-obsidian p-4 border-4 border-black shadow-block">
+                  {['Generating Chunks', 'Tracking Endermen', 'Brewing Potions', 'Lighting Portals'].map((step, i) => (
+                    <div key={step} className="flex items-center justify-between border-b-4 border-black pb-2">
+                      <span className="text-[16px] text-cobblestone uppercase">{step}</span>
+                      <div className="w-3 h-3 border-2 border-black bg-pumpkin animate-ping" style={{ animationDelay: `${i * 0.2}s` }} />
                     </div>
                   ))}
                 </div>
@@ -169,18 +169,18 @@ export default function App() {
         </div>
 
         <div className="w-full md:w-[400px] flex-shrink-0 flex flex-col gap-4">
-          <div className="flex gap-2 bg-black border-4 border-gray-800 p-1 flex-shrink-0">
+          <div className="flex gap-2 bg-obsidian border-4 border-black p-2 flex-shrink-0 shadow-block">
             {[
-              { id: 'inspector', label: 'TARGET STATS' },
-              { id: 'ai', label: 'FIB DOSSIER' },
+              { id: 'inspector', label: 'ENTITY STATS' },
+              { id: 'ai', label: "WITCH'S GRIMOIRE" },
             ].map(({ id, label }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest transition-all border-2 ${
+                className={`flex-1 py-3 text-[16px] font-pixel uppercase transition-all border-4 shadow-block-sm ${
                   activeTab === id 
-                    ? 'bg-white text-black border-white' 
-                    : 'bg-dark-900 text-gray-500 hover:text-white border-transparent'
+                    ? 'bg-pumpkin text-black border-black' 
+                    : 'bg-obsidian text-cobblestone hover:text-white border-black'
                 }`}
               >
                 {label}
@@ -188,7 +188,7 @@ export default function App() {
             ))}
           </div>
 
-          <div className="h-[450px] md:flex-1 min-h-0 overflow-hidden relative">
+          <div className="h-[450px] md:flex-1 min-h-0 overflow-hidden relative shadow-block">
             {activeTab === 'inspector' ? (
               <NodeInspector wallet={selectedNode} onClose={() => setSelectedNode(null)} />
             ) : (

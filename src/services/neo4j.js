@@ -448,9 +448,8 @@ export async function resumeAuraInstance() {
       return false;
     }
 
-    // 1. Authenticate with Aura API via Client Credentials
     const credentials = btoa(`${AURA_CLIENT_ID}:${AURA_CLIENT_SECRET}`);
-    const tokenRes = await fetch('https://api.neo4j.io/oauth/token', {
+    const tokenRes = await fetch('/aura-api/oauth/token', { // <-- Updated URL
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
@@ -463,7 +462,7 @@ export async function resumeAuraInstance() {
     const { access_token } = await tokenRes.json();
 
     // 2. Trigger Resume for the specific instance
-    const resumeRes = await fetch(`https://api.neo4j.io/v1/instances/${instanceId}/resume`, {
+    const resumeRes = await fetch(`/aura-api/v1/instances/${instanceId}/resume`, { // <-- Updated URL
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${access_token}`,

@@ -9,6 +9,10 @@
       "destination": "https://api.gopluslabs.io/:path*"
     },
     {
+      "source": "/aura-api/:path*",
+      "destination": "https://api.neo4j.io/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

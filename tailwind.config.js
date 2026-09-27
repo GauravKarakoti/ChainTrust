@@ -4,26 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        dark: {
-          900: '#0a0a0a', // Gritty asphalt black
-          800: '#141414',
-          700: '#1f1f1f',
-          600: '#2d2d2d',
-        },
-        gta: {
-          green: '#54b649', // Classic San Andreas Green
-          blue: '#00a8f3',  // GTA V Menu Blue
-          red: '#990000',   // Wasted Red
-          hudBase: 'rgba(0, 0, 0, 0.85)', // Standard dark HUD
-        },
-        hallow: {
-          orange: '#FF7518', // Pumpkin accent
-          slime: '#39FF14',  // Toxic green accent
-        }
+        obsidian: '#1E1E1E',
+        pumpkin: '#FF7518',
+        creeper: '#39C040',
+        nether: '#7A28CB',
+        cobblestone: '#757575',
+        dirt: '#3b2716',
       },
       fontFamily: {
-        gta: ['Pricedown', 'sans-serif'], 
-        hud: ['Chalet', 'ui-sans-serif', 'system-ui'],
+        pixel: ['"VT323"', 'monospace'],
+        block: ['"Press Start 2P"', 'cursive'],
+      },
+      boxShadow: {
+        'block': '4px 4px 0px 0px rgba(0, 0, 0, 1)',
+        'block-sm': '2px 2px 0px 0px rgba(0, 0, 0, 1)',
+        'block-glow': '4px 4px 0px 0px rgba(255, 117, 24, 0.5)',
       }
     },
   },

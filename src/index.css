@@ -1,12 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Chalet:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
-
-@font-face {
-  font-family: 'Pricedown';
-  src: url('/fonts/Pricedown.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -18,34 +10,35 @@
 
 body {
   margin: 0;
-  font-family: 'Chalet', 'Helvetica Neue', sans-serif;
-  background-color: #050505; /* Deep asphalt black */
+  font-family: 'VT323', monospace;
+  background-color: #2b1c0e; /* Deep dirt brown */
   color: #ffffff;
   overflow-x: hidden;
-  /* Subtle dark radar grid (GTA style) */
+  /* Minecraft Dirt / Halloween Cobweb Pattern */
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(45deg, #1e1309 25%, transparent 25%, transparent 75%, #1e1309 75%, #1e1309), 
+    linear-gradient(45deg, #1e1309 25%, transparent 25%, transparent 75%, #1e1309 75%, #1e1309);
+  background-size: 64px 64px;
+  background-position: 0 0, 32px 32px;
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0a0a;
-  border-left: 1px solid #1f1f1f;
+  background: #1E1E1E; /* Obsidian */
+  border: 2px solid #000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 0px;
+  background: #757575; /* Cobblestone */
+  border: 2px solid #000;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #54b649; /* GTA Green hover */
+  background: #FF7518; /* Pumpkin hover */
 }
 
 .no-scrollbar {
@@ -54,7 +47,7 @@ body {
 }
 
 .mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'VT323', monospace;
 }
 
 #cy {
@@ -63,34 +56,30 @@ body {
   background: transparent;
 }
 
-/* Base GTA Glows */
-.glow-green { box-shadow: 0 0 15px rgba(84, 182, 73, 0.4); }
-.glow-blue { box-shadow: 0 0 15px rgba(0, 168, 243, 0.4); }
-
-/* Halloween Accents */
+/* Voxel Glows */
+.glow-creeper { box-shadow: 0 0 15px rgba(57, 192, 64, 0.6); }
 .glow-pumpkin { box-shadow: 0 0 20px rgba(255, 117, 24, 0.6); }
 
-@keyframes pulse-wanted {
-  0%, 100% { border-color: #990000; box-shadow: inset 0 0 10px rgba(153,0,0,0.3); }
-  50% { border-color: #00a8f3; box-shadow: inset 0 0 15px rgba(0,168,243,0.3); }
+@keyframes pulse-cursed {
+  0%, 100% { border-color: #FF7518; box-shadow: inset 0 0 10px rgba(255,117,24,0.3); }
+  50% { border-color: #7A28CB; box-shadow: inset 0 0 15px rgba(122,40,203,0.3); }
 }
 
-.wanted-blink {
-  animation: pulse-wanted 0.8s ease-in-out infinite;
+.cursed-blink {
+  animation: pulse-cursed 0.8s ease-in-out infinite;
 }
 
 .cy-tooltip {
   position: absolute;
-  background: rgba(0, 0, 0, 0.95);
-  border: 2px solid #54b649;
-  border-radius: 0;
+  background: #1E1E1E;
+  border: 2px solid #FF7518;
   padding: 8px 12px;
-  font-size: 12px;
-  font-family: 'Chalet', sans-serif;
+  font-size: 16px;
+  font-family: 'VT323', monospace;
   text-transform: uppercase;
-  font-weight: bold;
   pointer-events: none;
   z-index: 1000;
   white-space: nowrap;
   color: #fff;
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
 }

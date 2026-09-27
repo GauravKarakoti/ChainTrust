@@ -31,6 +31,11 @@ export default defineConfig(({ mode }) => {
               proxyReq.removeHeader('Referer');
             });
           }
+        },
+        '/aura-api': {
+          target: 'https://api.neo4j.io',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/aura-api/, '')
         }
       }
     }
